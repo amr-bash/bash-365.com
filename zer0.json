@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/bamr87/zer0-CMS/main/schemas/zer0.schema.json",
+
+  // The project schema for zer0-CMS. Everything here describes *this site*;
+  // anything about one person's machine belongs in VS Code settings instead.
+  //
+  // Derived from the corpus itself — the content folders are the five real
+  // collections under pages/, and the taxonomy below is the set of categories
+  // actually in use, not an aspiration.
+
+  "contentFolders": [
+    {
+      "title": "Posts",
+      "path": "[[workspace]]/pages/_posts",
+      "contentTypes": ["post"]
+    },
+    {
+      "title": "Toolkit",
+      "path": "[[workspace]]/pages/_toolkit",
+      "contentTypes": ["doc"]
+    },
+    {
+      "title": "Case studies",
+      "path": "[[workspace]]/pages/_case-studies",
+      "contentTypes": ["doc"]
+    },
+    {
+      "title": "Services",
+      "path": "[[workspace]]/pages/_services",
+      "contentTypes": ["doc"]
+    },
+    {
+      "title": "About",
+      "path": "[[workspace]]/pages/_about",
+      "contentTypes": ["doc"]
+    }
+  ],
+
+  "contentTypes": [
+    {
+      "name": "post",
+      "fields": [
+        { "name": "title", "type": "string", "required": true },
+        { "name": "description", "type": "string", "required": true },
+        { "name": "author", "type": "string" },
+        { "name": "layout", "type": "choice", "choices": ["article", "news", "section", "default"] },
+        { "name": "date", "type": "datetime" },
+        { "name": "lastmod", "type": "datetime" },
+        { "name": "draft", "type": "boolean" },
+        { "name": "categories", "type": "categories" },
+        { "name": "tags", "type": "tags" },
+        { "name": "keywords", "type": "list" },
+        { "name": "excerpt", "type": "string" },
+        { "name": "preview", "type": "image" },
+        { "name": "featured", "type": "boolean" },
+        { "name": "permalink", "type": "string" }
+      ]
+    },
+    {
+      "name": "doc",
+      "fields": [
+        { "name": "title", "type": "string", "required": true },
+        { "name": "description", "type": "string" },
+        { "name": "sub-title", "type": "string" },
+        { "name": "layout", "type": "string" },
+        { "name": "permalink", "type": "string" },
+        { "name": "lastmod", "type": "datetime" },
+        { "name": "topic", "type": "string" },
+        { "name": "topic_label", "type": "string" },
+        { "name": "level", "type": "string" },
+        { "name": "order", "type": "number" },
+        { "name": "sidebar", "type": "string" }
+      ]
+    }
+  ],
+
+  "taxonomy": {
+    "categories": ["ai", "business", "corp", "erp", "muses", "partners", "tech"],
+    "tags": []
+  },
+
+  "content": {
+    "publicFolder": "assets"
+  },
+
+  "seo": {
+    "titleLength": 60,
+    "descriptionLength": 160,
+    "slugLength": 75,
+    "contentLength": 1760
+  },
+
+  "slug": {
+    // This site's permalinks were minted by Front Matter CMS, so it keeps
+    // Front Matter's stop-word list to go on generating the same ones. A new
+    // site should leave this unset and take the "minimal" default — "smart"
+    // also deletes words a title needs, which is why it is no longer default:
+    // it turns "MCP for the back office" into "mcp-office".
+    "stopWords": "smart"
+  },
+
+  "governance": {
+    "enabled": true,
+    "draftsFolder": ".zer0/drafts",
+    "ledgerPath": ".zer0/ledger.json",
+    // Off. Publishing here goes through the Python lane and CI; until someone
+    // decides otherwise, the editor is preview-and-draft only.
+    "publishAllow": false
+  }
+}
