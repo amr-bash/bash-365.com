@@ -108,21 +108,36 @@ read_config() {
         # This is more robust than yq for files with anchors
         local in_section=false
         local value=""
-        
+        # Indentation of the block's own keys, taken from the first one seen.
+        # Without it a key nested inside collection_styles/section_styles is
+        # indistinguishable from a top-level one, and a nested `style:` would
+        # be returned as the global style.
+        local base_indent=-1
+        local indent=-1
+
         while IFS= read -r line; do
             # Check if we're entering the preview_images section
             if [[ "$line" =~ ^preview_images: ]]; then
                 in_section=true
                 continue
             fi
-            
+
             # Check if we're leaving the section (new top-level key)
             if [[ "$in_section" == true && "$line" =~ ^[a-zA-Z_]+: && ! "$line" =~ ^[[:space:]] ]]; then
                 break
             fi
-            
-            # Look for the key within the section
-            if [[ "$in_section" == true && "$line" =~ ^[[:space:]]+${key}[[:space:]]*:[[:space:]]*(.*) ]]; then
+
+            # Measure this line's indentation when it is a key line at all;
+            # comments, blanks and list items score -1 and can never match.
+            if [[ "$in_section" == true && "$line" =~ ^([[:space:]]+)[a-zA-Z_][a-zA-Z0-9_-]*[[:space:]]*: ]]; then
+                indent=${#BASH_REMATCH[1]}
+                [[ $base_indent -lt 0 ]] && base_indent=$indent
+            else
+                indent=-1
+            fi
+
+            # Look for the key within the section, at the block's own depth
+            if [[ "$in_section" == true && $indent -eq $base_indent && "$line" =~ ^[[:space:]]+${key}[[:space:]]*:[[:space:]]*(.*) ]]; then
                 value="${BASH_REMATCH[1]}"
                 # First, remove inline comments (only if not inside quotes)
                 # Simple approach: if value starts with quote, find closing quote
@@ -1234,7 +1249,37 @@ process_file() {
     
     debug "Title: $title"
     debug "Preview: $preview"
-    
+
+    # Per-file style overrides, resolved global → collection_styles →
+    # section_styles by lib/preview_styles.py. They are declared `local` so
+    # generate_prompt and the providers called from here see the resolved
+    # values through bash's dynamic scoping, without the run's globals being
+    # rewritten for the next file.
+    local ov_style="$IMAGE_STYLE"
+    local ov_modifiers="$IMAGE_STYLE_MODIFIERS"
+    local ov_model="$IMAGE_MODEL"
+    local ov_size="$IMAGE_SIZE"
+    local ov_quality="$IMAGE_QUALITY"
+    local ov_layers=""
+    local ov_key ov_value
+    while IFS=$'\t' read -r ov_key ov_value; do
+        case "$ov_key" in
+            style)           ov_style="$ov_value" ;;
+            style_modifiers) ov_modifiers="$ov_value" ;;
+            model)           ov_model="$ov_value" ;;
+            size)            ov_size="$ov_value" ;;
+            quality)         ov_quality="$ov_value" ;;
+            _layers)         ov_layers="$ov_value" ;;
+        esac
+    done < <(python3 "$SCRIPT_DIR/lib/preview_styles.py" "$file" 2>/dev/null || true)
+    [[ -n "$ov_layers" ]] && info "  ↳ Style overrides applied ($ov_layers)"
+    local IMAGE_STYLE="$ov_style"
+    local IMAGE_STYLE_MODIFIERS="$ov_modifiers"
+    local IMAGE_MODEL="$ov_model"
+    local IMAGE_SIZE="$ov_size"
+    local IMAGE_QUALITY="$ov_quality"
+
+
     # =========================================================================
     # ENHANCE MODE: improve an existing preview image
     # =========================================================================

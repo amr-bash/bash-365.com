@@ -129,6 +129,10 @@ Requires `OPENAI_API_KEY` — or, for `--provider xai`, an xAI OAuth token (read
 
 Mints the subscription OAuth token behind `--provider xai` (ported from bamr87/law-ai spec 050): an RFC 8628 device-code grant by default, a loopback PKCE grant with `--loopback`, plus `--status`, `--check`, `--refresh`, and `--logout`. Writes `.xai/credentials.json` (gitignored, mode 0600); the refresh token rotates on every use. Never prints token values.
 
+### `features/lib/preview_styles.py`
+
+Resolves per-collection and per-section style overrides for one content file (`python3 scripts/features/lib/preview_styles.py <file>`), printing `key<TAB>value` lines the generator applies to that file only. Order is global → `collection_styles[<collection>]` → `section_styles[<section>]`, most specific winning key by key; the override keys match zer0-image-generator's, so blocks stay portable. A lookup that cannot answer exits 0 with no output rather than failing a run. Tests: `python3 -m unittest scripts/features/lib/test_preview_styles.py`.
+
 ### `features/lib/xai_auth.py`
 
 The credential chain the generator calls (`python3 scripts/features/lib/xai_auth.py resolve`): explicit `XAI_OAUTH_TOKEN`, then the repo store above (refreshed under a cross-process lock), then the Grok CLI and Kilo stores, then `XAI_API_KEY`. Standard library only. Tests: `python3 -m unittest scripts/features/lib/test_xai_auth.py` (no network).

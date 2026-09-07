@@ -2,6 +2,8 @@
 
 How the AI-generated banner images for posts and section pages work, and the rules that keep frontmatter, filenames, and the generator in sync.
 
+This is the operator's runbook — the facts, the commands, and the traps. The **full reference** — every configuration key, how the prompt is assembled, the styling levers, the render and social-card path, the CMS surface, and where this sits relative to `zer0-image-generator` — is the published partner doc at [`pages/_toolkit/preview-image-pipeline.md`](../pages/_toolkit/preview-image-pipeline.md) (`/tools/partners/preview-image-pipeline/`). Change a behavior and both files need the update.
+
 ## The facts
 
 | Item | Value |
@@ -53,6 +55,24 @@ The build auto-prefixes `/assets` (the `assets_prefix` / `auto_prefix` keys in `
 ```
 
 `--force` regenerates even when an image already exists — pair it with `--file` for a single post rather than running it site-wide.
+
+## Per-section styles
+
+The four post sections carry four editorial voices, so they carry four visual registers. `section_styles:` in the `preview_images:` block overrides `style_modifiers` per section (`corp`, `erp`, `muses`, `tech`); `collection_styles:` does the same per collection. Resolution is global → collection → section, most specific winning key by key, in [`scripts/features/lib/preview_styles.py`](../scripts/features/lib/preview_styles.py).
+
+**House rule: sections vary `style_modifiers`, never `style`.** The retro pixel-art base is the brand's visual identity; palette, mood, and composition carry the section voice. A test asserts it.
+
+```bash
+# What overrides apply to one file, and which layer supplied them
+python3 scripts/features/lib/preview_styles.py pages/_posts/erp/2026-01-31-erp-frankenstein.md
+
+# See the resulting prompt without spending anything
+./scripts/generate-preview-images.sh --dry-run --verbose --file <post>
+
+python3 -m unittest scripts/features/lib/test_preview_styles.py
+```
+
+A style block only affects images generated **after** it, so a section adopts its look as pieces are regenerated.
 
 ## xAI Imagine provider (OAuth first)
 

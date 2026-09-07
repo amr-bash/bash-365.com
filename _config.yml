@@ -122,6 +122,30 @@ preview_images:
   xai_aspect_ratio       : '3:2'              # matches the 1536x1024 house banners
   xai_resolution         : '1k'               # 1k or 2k
   xai_quality            : 'medium'           # low or medium
+  # Collections walked by a bare run or `--collection all`. Only `posts`
+  # carries generated banners; services and toolkit docs use hand-picked art.
+  collections:
+    - posts
+  # Per-collection and per-section style overrides, resolved most-specific-wins
+  # by scripts/features/lib/preview_styles.py:
+  #   global → collection_styles[<collection>] → section_styles[<section>]
+  # A collection is the nearest _<name> directory, a section the directory
+  # inside it (pages/_posts/erp/x.md → collection `posts`, section `erp`).
+  # Each block may set style, style_modifiers, size, quality, or model.
+  #
+  # House rule: sections vary `style_modifiers`, never `style`. The retro
+  # pixel-art base is the brand's visual identity and holds the site together;
+  # palette, mood, and composition are what carry a section's editorial voice.
+  # Changing a block only affects images generated afterwards.
+  section_styles:
+    corp:
+      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, restrained palette of deep blue, slate and gold, orderly geometric composition, one figure at a desk or a city skyline, no crowds'
+    erp:
+      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, warm stage lighting, expressive characters mid-gesture around a shared screen or counter, saturated palette'
+    muses:
+      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, dusk palette of violet, teal and amber, wide contemplative vista with one small figure, generous empty space'
+    tech:
+      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, schematic clarity, a workbench or terminal seen head-on, cool blue and green palette, diagrammatic shapes and connectors'
 
 breadcrumbs              : true # true, false (default)
 words_per_minute         : 200
