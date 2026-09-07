@@ -11,14 +11,12 @@
 
 A dual-purpose repository. Treat the two sub-projects independently — **never mix them in one commit.**
 
-1. **Jekyll site** (repo root) — `bashconsultants.com`, built on the `bamr87/zer0-mistakes` remote
+1. **Jekyll site** (repo root) — `bash-365.com`, built on the `bamr87/zer0-mistakes` remote
    theme, deployed to GitHub Pages on every push to `main`. This is the primary project.
 2. **VS Code extension** (`extension/`) — *Prompt Orchestrator*, a self-contained TypeScript
    sub-project that runs the shared `.github/prompts/` library from inside the editor.
 
-The site builds **Docker-first** (host Ruby is usually too old). See [`AGENTS.md`](./AGENTS.md) for
-the cross-tool overview and [`.github/copilot-instructions.md`](./.github/copilot-instructions.md)
-for the full project reference. This file does not repeat them — it adds the Claude-native layer.
+The site builds **Docker-first** (host Ruby is usually too old). See [`AGENTS.md`](./AGENTS.md) for the cross-tool overview and [`.github/copilot-instructions.md`](./.github/copilot-instructions.md) for the full project reference. This file does not repeat them — it adds the Claude-native layer.
 
 ## The context framework — where guidance lives
 
@@ -34,6 +32,7 @@ Guidance is layered. Read from the top; the deeper layers auto-load or are pulle
 | **File-scoped rules** | `.github/instructions/*.instructions.md` | Auto-matched by `applyTo` glob |
 | **Frontmatter schema** | [`.github/FRONTMATTER.md`](./.github/FRONTMATTER.md) | Editing any `.prompt.md` / `.instructions.md` |
 | **Content taxonomy** | [`_data/taxonomy.yml`](./_data/taxonomy.yml) | Categorizing or voicing a post |
+| **The content loop** | [`docs/content-loop.md`](./docs/content-loop.md) + `_data/loop/` | Before touching the loop's scripts, data, workflow, or the session-trace hook |
 
 ### The Claude-native primitives (`.claude/`)
 
@@ -41,37 +40,32 @@ Four primitives, one job each. See [`.claude/README.md`](./.claude/README.md) fo
 
 | Primitive | Directory | Use it when |
 |---|---|---|
-| **Skills** | `.claude/skills/*/SKILL.md` | You need a *governed procedure* — the same steps done the same way every time (editorial gate, authoring a toolkit doc, wikilink discipline, brand application). |
-| **Subagents** | `.claude/agents/*.md` | You want to *delegate* a bounded job to a fresh context (editorial review, build validation, brand audit). Invoke via the Agent tool. |
-| **Commands** | `.claude/commands/*.md` | You want a discoverable `/`-entry point that runs a common workflow (`/lint-content`, `/new-toolkit-doc`, `/brand-check`). |
-| **Memory + hooks** | `.claude/agent-memory/`, `.claude/hooks/`, `.claude/settings.json` | Agents carry decisions across sessions; hooks enforce policy automatically. |
+| **Skills** | `.claude/skills/*/SKILL.md` | You need a *governed procedure* — the same steps done the same way every time (editorial gate, authoring a toolkit doc, wikilink discipline, brand application, LinkedIn share drafting, one cycle of the content loop). |
+| **Subagents** | `.claude/agents/*.md` | You want to *delegate* a bounded job to a fresh context (editorial review, build validation, brand audit, the loop writer). Invoke via the Agent tool. |
+| **Commands** | `.claude/commands/*.md` | You want a discoverable `/`-entry point that runs a common workflow (`/lint-content`, `/new-toolkit-doc`, `/brand-check`, `/linkedin-draft`, `/loop-run`). |
+| **Memory + hooks** | `.claude/agent-memory/`, `.claude/hooks/`, `.claude/settings.json` | Agents carry decisions across sessions; hooks enforce policy automatically (the `SessionEnd` trace feeds the content loop). |
 
-**Skills vs. prompts:** `.github/prompts/*.prompt.md` are the *cross-tool* library (Copilot, the
-extension, Cursor). `.claude/skills/` are the *Claude-native* equivalents — richer, with optional
-scripts. When both exist, prefer the skill inside Claude Code; keep the two in sync when you change a
-shared workflow.
+**The content loop** is the showcase's autopilot: a daily, variable-gated routine that turns the practice's own commits, pull requests, and AI sessions into one new article every other day and one improvement on the days between, through the scripts in `scripts/loop/`, the `content-loop` skill, the `loop-writer` agent, and one human-merged pull request per run. Read [`docs/content-loop.md`](./docs/content-loop.md) before changing any of it.
+
+**Skills vs. prompts:** `.github/prompts/*.prompt.md` are the *cross-tool* library (Copilot, the extension, Cursor). `.claude/skills/` are the *Claude-native* equivalents — richer, with optional scripts. When both exist, prefer the skill inside Claude Code; keep the two in sync when you change a shared workflow.
 
 ## Operating rules
 
-These are the hard rules for working in this repo. The brand and content-style files add detail;
-these are the ones you cannot skip.
+These are the hard rules for working in this repo. The brand and content-style files add detail; these are the ones you cannot skip.
 
 1. **Minimal, surgical changes.** Match the surrounding style. Do not refactor adjacent code, and do
-   not restructure the remote theme — override via `_includes/`, `_layouts/`, `_sass/`, `_data/`.
+   not restructure the remote theme — override via `_includes/`, `_layouts/`, `_sass/`, `_data/`. Every override is declared in `.theme-overrides.yml` — see "Theme overrides" below.
 2. **Validate before declaring done.**
    - Jekyll changes → run the Docker build:
      `docker-compose exec -T jekyll bundle exec jekyll build --config '_config.yml,_config_dev.yml'`
    - Content changes → run the editorial gate (lints the whole repo, exit 1 on errors): `python3 scripts/content_lint.py`
    - Extension changes → `cd extension && npm run lint && npm run compile`
 3. **Governed content.** Customer-facing copy obeys `content-style.instructions.md` and
-   `brand.instructions.md`: no banned phrases, acronyms expanded on first use, sentence-case
-   headings, one H1, `description` 120–155 chars with no trailing period, one CTA. **Enact, don't
-   announce** — never name a piece's own creative device in reader-facing text.
+`brand.instructions.md`: no banned phrases, acronyms expanded on first use, sentence-case headings, one H1, `description` 120–155 chars with no trailing period, one CTA. **Enact, don't announce** — never name a piece's own creative device in reader-facing text.
 4. **Never invent** metrics, client names, logos, or certifications. Describe categories of work and
    what compliance frameworks require; never claim BASH is certified.
 5. **Deterministic-first.** If a step can be a script, it is a script (`scripts/`). Spend the model
-   where judgment is needed. Generated data (`_data/playbook.yml`, tool tables) comes from scripts,
-   not hand-editing — change the source, regenerate.
+where judgment is needed. Generated data (`_data/playbook.yml`, tool tables) comes from scripts, not hand-editing — change the source, regenerate.
 6. **Author is `Amr Abdel-Motaleb`.** Conventional commits: `<type>(<scope>): <subject>`
    (type ∈ `feat fix docs refactor chore ci`; scope ∈ `posts pages services config extension prompts docs toolkit`).
 7. **Update `CHANGELOG.md`** (`[Unreleased]`) for user-visible changes.
@@ -88,16 +82,29 @@ Internal cross-links use Obsidian `[[Page Title]]` syntax, resolved client-side.
 - **Pipeless only.** `[[Page Title]]` survives the kramdown GFM parser; the aliased form `[[a|b]]`
   gets mangled into a table. Reword instead of aliasing.
 - **Collection docs + non-root pages only.** The wiki index covers collection docs and pages with an
-  `output_ext` of `.html`; it does **not** index root-level pages (`tools.md`, `ai-operations.md`).
-  Link to those with a normal markdown link. Full detail: the `wikilinks` skill.
+`output_ext` of `.html`; it does **not** index root-level pages (`tools.md`, `ai-operations.md`). Link to those with a normal markdown link. Full detail: the `wikilinks` skill.
+
+## Theme overrides (what we fork, and why)
+
+The site is a thin consumer of `bamr87/zer0-mistakes`. Anything under `_includes/` or `_layouts/` that shares a path with the theme **shadows** it. [`.theme-overrides.yml`](./.theme-overrides.yml) at the repo root is the source of truth for those forks: fork a file, add its row with an honest reason. An undeclared fork reads as accidental drift to the theme's `audit-consumer`, and the point of the file is that its list stays short and true.
+
+| Override | Why |
+|---|---|
+| `_layouts/landing.html` | Bespoke marketing homepage — the interactive B-mark hero (`_includes/bash-mark.html`), services grid from `_data/entity/services.yml`, industries/process/FAQ. Replaces the theme's generic `_data/landing.yml` template. |
+| `_includes/analytics/posthog.html` | Consent gate, Global Privacy Control, no IP geolocation. **Retirable now** — upstreamed in v1.28.0 as `posthog.privacy.*`, set in `_config.yml`, and `remote_theme` is untagged so the theme honours them. Delete in its own PR after diffing the rendered PostHog init on both stacks. |
+| `_includes/analytics/google-tag-manager-head.html` | Deliberate no-op stub. Google Tag Manager is off site-wide; PostHog is the only analytics. |
+| `assets/images/wizard-on-journey.png` | Our own homepage/Open Graph image that happens to share a path with an unrelated theme asset. |
+
+`_data/**` and `_plugins/**` are **not** overrides — Jekyll never loads either from a theme, so ours are the only copies that run. `_data/authors.yml` exists for exactly that reason: the theme's author card and "About the Author" box read `site.data.authors`, which `remote_theme` does not ship. Its `name:` values must stay byte-identical to the `author:` strings in post front matter, or bylines fall back to a bare name and a generic icon.
 
 ## Build stacks (know which config you're in)
 
-| Stack | Config | Notes |
-|---|---|---|
-| **Local dev** | `_config.yml,_config_dev.yml` | Docker, port 4042, livereload. `_plugins/` run here. |
-| **GitHub Pages** | `_config.yml` alone | **Safe mode** — local `_plugins/` do **not** run in production. |
-| **Azure Static Web Apps** | `_config.yml,_config.azure.yml` | `Gemfile.azure` pins the theme as a gem. |
+| Stack | Config | Theme source | Built by CI? |
+|---|---|---|---|
+| **Local dev** | `_config.yml,_config_dev.yml` | path gem (`/zer0-mistakes` mount) | **No** |
+| **GitHub Pages** | `_config.yml` alone | `remote_theme`, untagged (latest) | Yes (`build-pages`) |
+| **Azure Static Web Apps** | `_config.yml,_config.azure.yml` | `Gemfile.azure` gem pin | Yes (`build-azure`) |
 
-Anything that depends on a local plugin (e.g. server-side wikilink resolution) must also work in
-Pages safe mode, or it is broken in production. Validate the change against the stack it ships on.
+Local dev runs on port 4042 with livereload and is the only stack where `_plugins/` execute; GitHub Pages is **safe mode**, so anything depending on a local plugin (e.g. server-side wikilink resolution) must also work without it, or it is broken in production.
+
+**CI never builds the local-dev stack.** `.github/workflows/build-validate.yml` builds only the Pages and Azure stacks (plus the content lint). The Docker command in operating rule 2 is a *developer* check that nothing verifies afterwards — a change that builds only under `_config_dev.yml` can still be broken in production, and a change that breaks only local dev will pass CI silently. Validate against the stack the change ships on, and treat a green PR as evidence about Pages and Azure only.

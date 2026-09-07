@@ -66,7 +66,7 @@ _layouts/, _includes/  Site-local overrides of the remote theme
 _plugins/              Local Jekyll plugins (Pages runs in safe mode — see below)
 pages/_posts/          Blog posts, by section: corp / erp / muses / tech
 pages/_services/       Service detail pages + hub
-pages/_case_studies/   Anonymized engagement snapshots
+pages/_case-studies/   Anonymized engagement snapshots
 api/                   Azure Functions app (AI chat proxy)
 scripts/               Preview-image generator, content linter, playbook data
 extension/             VS Code extension (independent sub-project)
@@ -84,8 +84,7 @@ docs/                  Internal operations docs (excluded from the build)
 
 ## Contact
 
-**BASH Consulting** — Denver, Colorado
-Email: [info@bashconsultants.com](mailto:info@bashconsultants.com) · Phone: [720-352-4641](tel:+17203524641) · Web: [bash-365.com](https://bash-365.com)
+**BASH Consulting** — Denver, Colorado Email: [info@bashconsultants.com](mailto:info@bashconsultants.com) · Phone: [720-352-4641](tel:+17203524641) · Web: [bash-365.com](https://bash-365.com)
 
 ## License
 
