@@ -350,6 +350,28 @@
       "group": "build",
       "problemMatcher": [],
       "detail": "Generate previews for all configured collections (costs API credits)"
+    },
+
+    {
+      "label": "🖼️ Preview Images: xAI Login",
+      "type": "shell",
+      "command": "./scripts/features/xai-login",
+      "args": [],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Mint the xAI subscription OAuth token (device-code flow) for --provider xai"
+    },
+
+    {
+      "label": "🖼️ Preview Images: Generate for Posts (xAI)",
+      "type": "shell",
+      "command": "./scripts/generate-preview-images.sh",
+      "args": ["--provider", "xai", "--collection", "posts", "--verbose"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Generate previews for posts via xAI Imagine over the subscription OAuth token"
     }
   ]
 }

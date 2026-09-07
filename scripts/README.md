@@ -125,6 +125,14 @@ Requires `OPENAI_API_KEY` — or, for `--provider xai`, an xAI OAuth token (read
 ./scripts/features/generate-preview-images --collection posts    # generate
 ```
 
+### `features/xai-login`
+
+Mints the subscription OAuth token behind `--provider xai` (ported from bamr87/law-ai spec 050): an RFC 8628 device-code grant by default, a loopback PKCE grant with `--loopback`, plus `--status`, `--check`, `--refresh`, and `--logout`. Writes `.xai/credentials.json` (gitignored, mode 0600); the refresh token rotates on every use. Never prints token values.
+
+### `features/lib/xai_auth.py`
+
+The credential chain the generator calls (`python3 scripts/features/lib/xai_auth.py resolve`): explicit `XAI_OAUTH_TOKEN`, then the repo store above (refreshed under a cross-process lock), then the Grok CLI and Kilo stores, then `XAI_API_KEY`. Standard library only. Tests: `python3 -m unittest scripts/features/lib/test_xai_auth.py` (no network).
+
 ### `generate-preview-images.sh`
 
 Backward-compatibility wrapper that forwards all arguments to `features/generate-preview-images`. The VS Code tasks in `.vscode/tasks.json` call this wrapper.

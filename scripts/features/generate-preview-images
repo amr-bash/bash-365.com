@@ -26,8 +26,9 @@
 #
 # Environment Variables:
 #   OPENAI_API_KEY          OpenAI API key for DALL-E image generation
-#   XAI_OAUTH_TOKEN         xAI OAuth access token (preferred for --provider xai)
-#   XAI_API_KEY             xAI API key (fallback for --provider xai)
+#   XAI_OAUTH_TOKEN         Explicit xAI OAuth token (--provider xai); the store
+#                           minted by scripts/features/xai-login is read otherwise
+#   XAI_API_KEY             xAI API key (last-resort fallback for --provider xai)
 #   STABILITY_API_KEY       Stability AI API key for Stable Diffusion
 #   IMAGE_STYLE             Default image style (default: "digital art, professional")
 #   IMAGE_SIZE              Image dimensions (default: "1024x1024")
@@ -287,8 +288,10 @@ OPTIONS:
 
 ENVIRONMENT VARIABLES:
     OPENAI_API_KEY          Required for OpenAI DALL-E provider
-    XAI_OAUTH_TOKEN         xAI OAuth token for --provider xai (else the Grok CLI
-                            store ~/.grok/auth.json or Kilo's xAI login is read)
+    XAI_OAUTH_TOKEN         Explicit xAI OAuth token for --provider xai; otherwise
+                            the store minted by scripts/features/xai-login, then the
+                            Grok CLI store, then Kilo's xAI login are read
+    XAI_CREDENTIALS_PATH    Where xai-login keeps its store (default .xai/credentials.json)
     XAI_API_KEY             xAI API key, used only when no OAuth token resolves
     XAI_IMAGE_MODEL         xAI model (default: grok-imagine-image-2.0)
     XAI_IMAGE_ASPECT        xAI aspect ratio (default: 3:2)
@@ -317,7 +320,8 @@ EXAMPLES:
     # Generate images for posts collection
     ./scripts/generate-preview-images.sh --collection posts
 
-    # Same, painted by xAI Imagine (OAuth from `grok login` or Kilo, API key last)
+    # Same, painted by xAI Imagine: mint the subscription token once, then paint
+    ./scripts/features/xai-login
     ./scripts/generate-preview-images.sh --provider xai --collection posts
 
     # Generate image for a specific file
@@ -444,7 +448,7 @@ validate_environment() {
                 ;;
             xai)
                 if ! resolve_xai_auth; then
-                    error "No xAI credential: run \`grok login\`, set XAI_OAUTH_TOKEN, or set XAI_API_KEY (see .env.example)"
+                    error "No xAI credential: run scripts/features/xai-login (see docs/preview-images.md), or set XAI_OAUTH_TOKEN / XAI_API_KEY"
                 fi
                 info "xAI auth: $XAI_AUTH_MODE via $XAI_AUTH_SOURCE"
                 ;;
@@ -681,151 +685,25 @@ generate_image_openai() {
 # =============================================================================
 # xAI Imagine provider (OAuth first)
 # =============================================================================
-# Ported from the lifehacker.dev preview wiring (scripts/preview/lib/xai_auth.mjs
-# and xai.mjs): a subscription/OAuth token wins over a metered API key, and the
-# key is never sent when OAuth is present. Sources, in order:
+# The credential chain lives in lib/xai_auth.py (ported from bamr87/law-ai's
+# xai_oauth module, itself a port of the flow Kilo Code ships in the open). A
+# subscription/OAuth token wins over a metered API key, and the key is never
+# sent when OAuth is present. Sources, in order, first hit wins:
 #   1. XAI_OAUTH_TOKEN
-#   2. Official Grok CLI store (~/.grok/auth.json from `grok login`)
-#   3. Kilo's local xAI OAuth store (~/.local/share/kilo/auth.json), refreshed
+#   2. This repo's store, .xai/credentials.json, minted by scripts/features/xai-login
+#      (device-code or loopback PKCE grant) and refreshed under a cross-process lock
+#   3. Official Grok CLI store (~/.grok/auth.json from `grok login`)
+#   4. Kilo's local xAI OAuth store (~/.local/share/kilo/auth.json), refreshed
 #      against auth.x.ai when the access token is expired
-#   4. XAI_API_KEY (pay-per-use; last resort)
-# GROK_AUTH_PATH / KILO_AUTH_PATH override the store locations. Never logs a token.
+#   5. XAI_API_KEY (pay-per-use; last resort)
+# XAI_CREDENTIALS_PATH / GROK_AUTH_PATH / KILO_AUTH_PATH override the store
+# locations. Never logs a token.
 
 # Resolve the xAI credential into XAI_AUTH_TOKEN / XAI_AUTH_SOURCE / XAI_AUTH_MODE.
+# Pass --force-refresh after a 401 to rotate a stored token that still looks valid.
 resolve_xai_auth() {
     local resolved
-    if ! resolved=$(python3 - <<'PY'
-import base64, json, os, sys, time, urllib.error, urllib.parse, urllib.request
-
-SKEW = 60  # seconds of clock skew tolerated before a token counts as expired
-
-
-def claims(token):
-    try:
-        part = str(token or "").split(".")[1]
-        part += "=" * (-len(part) % 4)
-        return json.loads(base64.urlsafe_b64decode(part))
-    except Exception:
-        return None
-
-
-def expiry(value, jwt):
-    if isinstance(value, (int, float)) and value:
-        return value / 1000 if value > 1e12 else value
-    exp = (jwt or {}).get("exp")
-    return exp if isinstance(exp, (int, float)) else 0
-
-
-def read_store(path):
-    try:
-        with open(path) as fh:
-            data = json.load(fh)
-        return data if isinstance(data, dict) else None
-    except Exception:
-        return None
-
-
-def out(token, source, mode):
-    print(json.dumps({"token": token, "source": source, "mode": mode}))
-    sys.exit(0)
-
-
-def fail(message):
-    print(message, file=sys.stderr)
-    sys.exit(3)
-
-
-env = os.environ
-home = os.path.expanduser("~")
-
-token = env.get("XAI_OAUTH_TOKEN", "").strip()
-if token:
-    out(token, "XAI_OAUTH_TOKEN", "oauth")
-
-grok_path = env.get("GROK_AUTH_PATH") or os.path.join(home, ".grok", "auth.json")
-store = read_store(grok_path)
-if store:
-    rows = list(store.items())
-    hit = next((r for r in rows if "auth.x.ai" in r[0]), None) or \
-        next((r for r in rows if "accounts.x.ai" in r[0]), None)
-    if hit:
-        _scope, value = hit
-        rec = value if isinstance(value, dict) else {"key": value}
-        access = rec.get("key") or rec.get("access") or rec.get("access_token")
-        if access:
-            exp = expiry(rec.get("expires"), claims(access))
-            if not exp or exp - SKEW > time.time():
-                out(access, "grok-auth", "oauth")
-
-xdg = env.get("XDG_DATA_HOME") or os.path.join(home, ".local", "share")
-kilo_path = env.get("KILO_AUTH_PATH") or os.path.join(xdg, "kilo", "auth.json")
-store = read_store(kilo_path)
-slot = store.get("xai") if store else None
-if isinstance(slot, dict) and (slot.get("access") or slot.get("refresh")):
-    jwt = claims(slot.get("access"))
-    exp = expiry(slot.get("expires"), jwt)
-    if slot.get("access") and exp - SKEW > time.time():
-        out(slot["access"], "kilo-auth", "oauth")
-    if slot.get("refresh"):
-        client_id = slot.get("client_id") or (jwt or {}).get("client_id") or (jwt or {}).get("aud")
-        if isinstance(client_id, list):
-            client_id = client_id[0] if client_id else None
-        if not client_id:
-            fail("xAI OAuth access token expired and the store has no client_id to refresh with — re-login via Kilo")
-        body = urllib.parse.urlencode({
-            "grant_type": "refresh_token",
-            "refresh_token": slot["refresh"],
-            "client_id": str(client_id),
-        }).encode()
-        fresh, last = None, "no token endpoint responded"
-        for path in ("/oauth/token", "/oauth2/token"):
-            req = urllib.request.Request(
-                "https://auth.x.ai" + path, data=body, method="POST",
-                headers={"content-type": "application/x-www-form-urlencoded"})
-            try:
-                with urllib.request.urlopen(req, timeout=30) as res:
-                    fresh = json.loads(res.read().decode("utf-8"))
-                break
-            except urllib.error.HTTPError as err:
-                last = f"{err.code} from {path}"
-                if err.code == 404:
-                    continue
-                fail(f"xAI OAuth refresh failed ({last})")
-            except Exception as err:
-                fail(f"xAI OAuth refresh failed ({err})")
-        if not fresh:
-            fail(f"xAI OAuth refresh failed ({last})")
-        if not fresh.get("access_token"):
-            fail("xAI OAuth refresh returned no access_token")
-        try:
-            ttl = float(fresh.get("expires_in") or 3600)
-        except (TypeError, ValueError):
-            ttl = 3600.0
-        renewed = dict(slot)
-        renewed.update({
-            "type": "oauth",
-            "access": fresh["access_token"],
-            "refresh": fresh.get("refresh_token") or slot["refresh"],
-            "expires": int((time.time() + ttl) * 1000),
-            "client_id": client_id,
-        })
-        store["xai"] = renewed
-        os.makedirs(os.path.dirname(kilo_path), exist_ok=True)
-        tmp = kilo_path + ".tmp"
-        with open(tmp, "w") as fh:
-            json.dump(store, fh, indent=2)
-            fh.write("\n")
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, kilo_path)
-        out(renewed["access"], "kilo-auth-refresh", "oauth")
-    fail("xAI OAuth access token in the Kilo store is expired and has no refresh token — re-login via Kilo")
-
-key = env.get("XAI_API_KEY", "").strip()
-if key:
-    out(key, "XAI_API_KEY", "api_key")
-fail("no xAI credential. Run `grok login`, set XAI_OAUTH_TOKEN, or set XAI_API_KEY")
-PY
-    ); then
+    if ! resolved=$(python3 "$SCRIPT_DIR/lib/xai_auth.py" resolve "$@"); then
         return 1
     fi
     XAI_AUTH_MODE=$(printf '%s' "$resolved" | jq -r '.mode')
@@ -907,6 +785,7 @@ generate_image_xai() {
     local http_code="000"
     local attempt=0
     local max_attempts=4
+    local refreshed="false"
     while [[ $attempt -lt $max_attempts ]]; do
         attempt=$((attempt + 1))
         http_code=$(curl -s --max-time 600 -o "$response_file" -w '%{http_code}' -X POST "$url" \
@@ -914,6 +793,17 @@ generate_image_xai() {
             -H "Content-Type: application/json" \
             --data-binary "@$payload_file") || http_code="000"
         [[ "$http_code" == "200" ]] && break
+        # A 401 on an OAuth token means it was revoked or rotated under us: refresh
+        # once (or pick up another worker's rotation) and retry, then give up.
+        if [[ "$http_code" == "401" && "$XAI_AUTH_MODE" == "oauth" && "$refreshed" != "true" ]]; then
+            refreshed="true"
+            warn "xAI API returned 401 — refreshing the OAuth token once and retrying"
+            if resolve_xai_auth --force-refresh; then
+                printf 'header = "Authorization: Bearer %s"\n' "$XAI_AUTH_TOKEN" > "$auth_config"
+                continue
+            fi
+            break
+        fi
         if [[ $attempt -lt $max_attempts && ( "$http_code" == "429" || "$http_code" == "000" || "$http_code" == 5* ) ]]; then
             local backoff=5
             [[ "$http_code" == "429" ]] && backoff=$((15 * attempt))

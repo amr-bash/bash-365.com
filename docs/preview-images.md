@@ -56,28 +56,45 @@ The build auto-prefixes `/assets` (the `assets_prefix` / `auto_prefix` keys in `
 
 ## xAI Imagine provider (OAuth first)
 
-`--provider xai` paints the same house-style prompt with xAI Imagine instead of OpenAI. The wiring is ported from the lifehacker.dev preview pipeline: a subscription (OAuth) token wins over a metered API key, and the key is never sent when OAuth is present. The generator resolves a credential in this order and stops at the first hit:
+`--provider xai` paints the same house-style prompt with xAI Imagine instead of OpenAI, authenticated by a **subscription OAuth token** rather than a metered key. xAI documents only an API key; the OAuth flow is the one Kilo Code ships in the open, ported here from [bamr87/law-ai](https://github.com/bamr87/law-ai/pull/99) (spec 050, ADR 0007). It reuses the public Grok-CLI desktop client id that xAI's auth server allowlists, which xAI can revoke at any time; that degrades to an ordinary provider failure.
 
-1. `XAI_OAUTH_TOKEN` (environment or `.env`)
-2. The official Grok CLI store, `~/.grok/auth.json`, written by `grok login`
-3. Kilo's local xAI login, `~/.local/share/kilo/auth.json`, refreshed against `auth.x.ai` when the access token has expired
-4. `XAI_API_KEY`, pay-per-use, last
+### Mint the token once
 
-`GROK_AUTH_PATH` and `KILO_AUTH_PATH` override the store locations. Nothing logs a token; the bearer header travels in a mode-600 curl config, exactly like the OpenAI key.
+```bash
+scripts/features/xai-login              # device-code flow: open the URL, enter the code, approve
+scripts/features/xai-login --loopback   # browser PKCE flow on 127.0.0.1:56121, for a host with a browser
+scripts/features/xai-login --status     # what is stored, without printing token values
+scripts/features/xai-login --check      # resolve a token and probe api.x.ai for the image models it can see
+scripts/features/xai-login --refresh    # rotate the stored token now
+scripts/features/xai-login --logout     # delete the store
+```
+
+Device code (RFC 8628) is the default because it needs no inbound path to this process: it works from a laptop, a VPS, or a container. The loopback grant is fixed to `127.0.0.1:56121` by the client registration and cannot be re-pointed. Either way a SuperGrok / X Premium+ subscription is required.
+
+Tokens land in `.xai/credentials.json` (gitignored, mode 0600, written atomically). xAI **rotates the refresh token on every use**, so the generator refreshes under an exclusive lock on a sibling `.lock` file: two workers cannot both spend the same token and invalidate each other, and a 401 mid-run triggers exactly one refresh-and-retry. Keep the file; do not copy it between machines.
+
+### The credential chain
+
+The generator resolves a credential in this order and stops at the first hit:
+
+1. `XAI_OAUTH_TOKEN` (environment or `.env`), an explicit override
+2. The repo store above, refreshed when the access token is within two minutes of expiry; `XAI_REFRESH_TOKEN` (plus optional `XAI_ACCESS_TOKEN`) seeds it on a host with no file
+3. The official Grok CLI store, `~/.grok/auth.json`, written by `grok login`
+4. Kilo's local xAI login, `~/.local/share/kilo/auth.json`, refreshed against `auth.x.ai` when expired
+5. `XAI_API_KEY`, pay-per-use, last
+
+`XAI_CREDENTIALS_PATH`, `GROK_AUTH_PATH`, and `KILO_AUTH_PATH` override the store locations. Nothing logs a token: error messages carry status codes and server error bodies only, and the bearer header travels in a mode-600 curl config, exactly like the OpenAI key. The chain lives in `scripts/features/lib/xai_auth.py`; `python3 -m unittest scripts/features/lib/test_xai_auth.py` covers it with no network.
+
+### Painting
 
 Model, aspect ratio, resolution, and quality come from `_config.yml` (`xai_model`, `xai_aspect_ratio`, `xai_resolution`, `xai_quality`; defaults `grok-imagine-image-2.0`, `3:2`, `1k`, `medium`) or the matching `XAI_IMAGE_MODEL`, `XAI_IMAGE_ASPECT`, `XAI_IMAGE_RESOLUTION`, and `XAI_IMAGE_QUALITY` environment variables. Imagine returns JPEG; the generator converts it to a real PNG (sips on macOS, ImageMagick or Pillow elsewhere) so `<slug>.png` stays an honest filename and nothing downstream changes.
 
 ```bash
-# Mint an OAuth token once (SuperGrok / X Premium); the generator reads the store directly
-curl -fsSL https://x.ai/cli/install.sh | bash
-export PATH="$HOME/.grok/bin:$PATH"
-grok login
-
 ./scripts/generate-preview-images.sh --provider xai --collection posts
 ./scripts/generate-preview-images.sh --provider xai --force --file pages/_posts/tech/2026-07-06-my-post.md
 ```
 
-Where the process cannot see the store (CI, Docker, another machine), copy the access token into `.env` as `XAI_OAUTH_TOKEN`; it is a short-lived JWT, so re-copy it after the next `grok login`. Without a subscription, an API key from [console.x.ai](https://console.x.ai/) as `XAI_API_KEY` is the documented fallback. `--enhance` stays an OpenAI-only feature.
+Without a subscription, an API key from [console.x.ai](https://console.x.ai/) as `XAI_API_KEY` is the documented fallback. `--enhance` stays an OpenAI-only feature.
 
 ## House rule: the final review pass
 
