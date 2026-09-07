@@ -73,13 +73,15 @@ jobs:
           fi
 
       - name: Link check built site (internal only)
+        # The pinned theme emits tag/archive navigation and fragment-only
+        # filters, but this site does not publish those archive routes.
         run: |
           bundle exec htmlproofer _site \
             --checks Links \
             --disable-external \
             --allow-hash-href \
             --no-enforce-https \
-            --ignore-urls "/^\/api\//"
+            --ignore-urls "/(^#|^\/api\/|^\/tags\/?($|#)|^\/archives\/?($|#))/"
 
       - name: Open or update site-health issue
         if: failure()
