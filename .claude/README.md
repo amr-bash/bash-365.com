@@ -13,7 +13,8 @@ Start at the root [`CLAUDE.md`](../CLAUDE.md). This file maps what lives here an
 │   ├── wikilinks/           Obsidian [[wikilink]] discipline (the kramdown/index foot-guns)
 │   ├── linkedin-share/      Draft on-brand LinkedIn company-page copy, staged for approval
 │   ├── brand/               Apply the BASH verbal + visual identity
-│   └── content-loop/        One cycle of the content loop: plan → write from real work → gate → ledger → one PR
+│   ├── content-loop/        One cycle of the content loop: plan → write from real work → gate → ledger → one PR
+│   └── _shared/quarantine.md  Shared guardrails every agent + skill cites: untrusted-input quarantine, honesty rule, merge discipline (agent-context kit v0.4.0)
 ├── agents/              # Subagents — delegate a bounded job to a fresh context
 │   ├── article-reviewer-editor.md   Editorial + SEO + frontmatter review (has project memory)
 │   ├── jekyll-build-validator.md    Validate the build across dev / Pages / Azure stacks
