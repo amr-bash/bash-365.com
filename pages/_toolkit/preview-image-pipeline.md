@@ -121,7 +121,9 @@ Four levers set the look, in widening specificity.
 
 A file's **collection** is the nearest `_<name>` ancestor directory and its **section** is the directory immediately inside it, matching [Jekyll's own collection layout](https://jekyllrb.com/docs/collections/). So `pages/_posts/erp/2026-01-31-a-post.md` has collection `posts` and section `erp`. Each block may set `style`, `style_modifiers`, `size`, `quality`, or `model`, and later layers win key by key — a section may override the palette and inherit everything else.
 
-The house rule is that **sections vary `style_modifiers`, never `style`.** The retro pixel-art base is what makes a page recognizable as this site; palette, mood, and composition are what carry a section's editorial voice. Four different art styles would read as four different sites. Here is the whole block, which is also the worked example:
+The house rule is that **a section may change the genre, never the medium.** Everything here is pixel art, because that is the brand's visual identity and it is what makes a page recognizable as this site. Which *tradition* of pixel art a section draws on is exactly where its editorial voice belongs, and pixel art has plenty of traditions to draw on. A test asserts the invariant — every section style still says "pixel art" — rather than policing which keys a block may set, because the constraint that matters is the medium and not the mechanism.
+
+Here is the whole block, which is also the worked example:
 
 ```yaml
 preview_images:
@@ -129,16 +131,24 @@ preview_images:
   style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, limited color palette'
   section_styles:
     corp:
-      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, restrained palette of deep blue, slate and gold, orderly geometric composition, one figure at a desk or a city skyline, no crowds'
+      style: '16-bit isometric strategy game pixel art, architectural and infographic, crisp orthogonal pixel grid, restrained and authoritative'
+      style_modifiers: 'limited palette of deep navy, slate grey, warm gold and off-white, isometric towers, ledgers, charts and city blocks, orderly composition with generous negative space, sharp unblurred pixel edges, any figures small and anonymous, no clutter'
     erp:
-      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, warm stage lighting, expressive characters mid-gesture around a shared screen or counter, saturated palette'
+      style: '1990s point-and-click adventure game pixel art, chunky expressive character sprites on a painted interior stage set, comedic staging'
+      style_modifiers: 'saturated palette of teal, amber and oxblood, warm practical light from desk lamps and monitors, characters mid-gesture around a counter, desk or shared screen, prop-rich foreground, hand-dithered shading, theatrical composition'
     muses:
-      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, dusk palette of violet, teal and amber, wide contemplative vista with one small figure, generous empty space'
+      style: 'atmospheric pixel-art landscape, heavy dithered gradients, wide cinematic vista, contemplative lo-fi dusk mood'
+      style_modifiers: 'muted palette of violet, deep teal, rust and pale amber, layered parallax silhouettes against a long horizon, a single small figure or lone object for scale, large areas of open sky, soft dithered light bloom, restrained detail'
     tech:
-      style_modifiers: 'pixelated, retro gaming style, CRT screen glow effect, schematic clarity, a workbench or terminal seen head-on, cool blue and green palette, diagrammatic shapes and connectors'
+      style: 'technical schematic pixel art, phosphor terminal and blueprint aesthetic, exploded isometric diagrams, precise and diagrammatic'
+      style_modifiers: 'tight palette of dark slate, phosphor green, cyan and a single warning amber, scanline glow, wireframe connectors and empty callout boxes carrying no lettering, a workbench or console seen head-on or in clean isometric, engineering-drawing clarity, no decorative flourish'
 ```
 
-Those four map onto the four voices the section profiles already define: strategic and restrained for corporate analysis, performed and character-driven for business-systems storytelling, reflective and atmospheric for essays, diagrammatic and hands-on for technical guides. The resolution runs in [`scripts/features/lib/preview_styles.py`](https://github.com/bamr87/bashconsultants/blob/main/scripts/features/lib/preview_styles.py), and a lookup that cannot answer returns no overrides rather than failing a run.
+Each one is a pixel-art tradition chosen to match a voice profile in `_data/taxonomy.yml`. Corporate analysis is sharp and strategic for people making spend decisions, so it gets the isometric strategy sim: architectural, orderly, no whimsy. Business-systems writing is performed comedy with a lesson underneath, so it gets the point-and-click adventure, where a cast on a stage set is the whole point. Essays are reflective and long, so they get the atmospheric landscape: wide, quiet, one small figure for scale. Technical guides are crisp instructions, so they get the phosphor terminal and the engineering drawing, where nothing is decorative.
+
+Note what stays global. The base `style` and `style_modifiers` still apply to anything outside a section — the news index at the top of the collection, and any post filed flat — so the publication as a whole keeps the general house look while its sections diverge underneath it.
+
+The resolution runs in [`scripts/features/lib/preview_styles.py`](https://github.com/bamr87/bashconsultants/blob/main/scripts/features/lib/preview_styles.py), and a lookup that cannot answer returns no overrides rather than failing a run.
 
 Verify a change before spending anything. The same file under two sections produces two different prompts:
 

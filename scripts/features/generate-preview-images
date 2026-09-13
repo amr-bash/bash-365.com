@@ -1393,6 +1393,12 @@ process_file() {
         return 0
     fi
     
+    # The output directory is created once at startup, but a long run can
+    # outlive it — a watching `jekyll serve` rebuilding into the same tree will
+    # wipe it mid-run. Re-assert it per file so a provider's write cannot fail
+    # for a reason its own error message would misattribute to a missing tool.
+    mkdir -p "$(dirname "$output_file")"
+
     # Generate image
     if generate_image "$prompt" "$output_file"; then
         # Update front matter with new preview path

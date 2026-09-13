@@ -192,11 +192,33 @@ class TestRepoConfig(unittest.TestCase):
             with self.subTest(section=name):
                 self.assertTrue(ps.filter_block(block), f"section '{name}' sets no recognized key")
 
-    def test_sections_vary_modifiers_not_the_base_style(self) -> None:
-        """House rule: the retro pixel-art base holds the site together."""
+    @staticmethod
+    def _says_pixel_art(style: str) -> bool:
+        """Both spellings are correct English; the config uses whichever reads better."""
+        return "pixel art" in style.lower().replace("pixel-art", "pixel art")
+
+    def test_the_global_style_is_pixel_art(self) -> None:
+        """The base every unsectioned page inherits, and the site's medium."""
+        self.assertTrue(self._says_pixel_art(str(self.block.get("style", ""))))
+
+    def test_every_section_stays_pixel_art(self) -> None:
+        """House rule: a section may change the genre, never the medium.
+
+        Sections carry their editorial voice by naming their own pixel-art
+        tradition — strategy sim, adventure game, atmospheric landscape,
+        schematic. What holds the site together is that all of them are still
+        pixel art, so that is what is asserted rather than which keys a block
+        is allowed to set.
+        """
         for name, block in (self.block.get("section_styles") or {}).items():
             with self.subTest(section=name):
-                self.assertNotIn("style", ps.filter_block(block))
+                style = ps.filter_block(block).get("style")
+                if style is None:
+                    continue  # inherits the global pixel-art base
+                self.assertTrue(
+                    self._says_pixel_art(style),
+                    f"section '{name}' sets a style that is not pixel art",
+                )
 
 
 if __name__ == "__main__":

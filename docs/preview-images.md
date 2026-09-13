@@ -58,9 +58,9 @@ The build auto-prefixes `/assets` (the `assets_prefix` / `auto_prefix` keys in `
 
 ## Per-section styles
 
-The four post sections carry four editorial voices, so they carry four visual registers. `section_styles:` in the `preview_images:` block overrides `style_modifiers` per section (`corp`, `erp`, `muses`, `tech`); `collection_styles:` does the same per collection. Resolution is global → collection → section, most specific winning key by key, in [`scripts/features/lib/preview_styles.py`](../scripts/features/lib/preview_styles.py).
+The four post sections carry four editorial voices, so they carry four visual registers. `section_styles:` in the `preview_images:` block overrides `style` and `style_modifiers` per section (`corp`, `erp`, `muses`, `tech`); `collection_styles:` does the same per collection. Resolution is global → collection → section, most specific winning key by key, in [`scripts/features/lib/preview_styles.py`](../scripts/features/lib/preview_styles.py).
 
-**House rule: sections vary `style_modifiers`, never `style`.** The retro pixel-art base is the brand's visual identity; palette, mood, and composition carry the section voice. A test asserts it.
+**House rule: a section may change the genre, never the medium.** Everything is pixel art — that is the brand's visual identity — but each section names its own pixel-art tradition: isometric strategy sim for `corp`, point-and-click adventure for `erp`, atmospheric landscape for `muses`, phosphor terminal and blueprint for `tech`. A test asserts every section style still says "pixel art". Anything outside a section (the news index, a flat post) keeps the global base.
 
 ```bash
 # What overrides apply to one file, and which layer supplied them
