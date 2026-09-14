@@ -608,6 +608,7 @@ exclude:
   - docker-compose.yml
   - package.json
   - frontmatter.json
+  - zer0.json            # zer0-CMS project config (was served at /zer0.json)
   # NOTE: CNAME (Pages custom domain), staticwebapp.config.json (Azure reads it
   # from the deployed root), favicon.ico, LICENSE and llms.txt stay published on
   # purpose — do not add them here.
