@@ -7,7 +7,7 @@ How the AI-generated banner images for posts and section pages work, and the rul
 | Item | Value |
 |---|---|
 | Generator | `scripts/features/generate-preview-images` (wrapper: `scripts/generate-preview-images.sh`) |
-| Jekyll integration | `_plugins/preview_image_generator.rb` (Liquid tags, path normalization, missing-preview detection) |
+| Engine (zer0 stack) | The `zer0-image-generator` gem in the root `Gemfile` — `bundle exec jekyll preview-images --list-missing` inside the dev container reports what lacks a banner, from the same `preview_images` block. It replaced the vendored `_plugins/preview_image_generator.rb`, whose Liquid filters and tags nothing rendered |
 | Provider / model | OpenAI `gpt-image-2` (configured in the `preview_images` block of `_config.yml`; DALL-E 3 is retired on this account) |
 | Size / quality | `1536x1024` landscape, `high` |
 | Style | Retro pixel art, 8-bit video game aesthetic — the `style` and `style_modifiers` keys in `_config.yml` are the single source of truth for the look |

@@ -58,6 +58,16 @@ gem "github-pages", ">= 228", group: :jekyll_plugins
 #   - Host-side bundling:  export ZER0_MISTAKES_PATH=/path/to/zer0-mistakes first
 gem "jekyll-theme-zer0", path: ENV["ZER0_MISTAKES_PATH"] || "/zer0-mistakes"
 
+# The zer0 stack's preview-banner engine (bamr87/zer0-image-generator). Adds
+# `bundle exec jekyll preview-images` (--list-missing, --dry-run, -f <file>) and
+# reads the one `preview_images:` block in _config.yml. It registers only that
+# command — nothing runs during `jekyll build` — so it lives here, in the local
+# dev stack, and not in Gemfile.azure or CI's Gemfile.ci: generation is never
+# part of a production build. It replaced the vendored
+# _plugins/preview_image_generator.rb. Constrained, unlike the rest of this
+# file, because the gem is pre-1.0 and a minor release may change the command.
+gem "zer0-image-generator", "~> 0.6", group: :jekyll_plugins
+
 # Web server for Ruby 3.0+ (required since WEBrick removed from stdlib)
 gem "webrick"
 

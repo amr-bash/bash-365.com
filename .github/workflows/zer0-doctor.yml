@@ -1,0 +1,41 @@
+# zer0 doctor — the zer0 stack consumer contract check (report-only)
+#
+# A thin caller of zer0-CMS's reusable doctor: is this site still aligned with
+# the zer0 stack — the zer0-mistakes theme and .theme-overrides.yml, the
+# zer0-image-generator gem and its one `preview_images:` block, a valid
+# zer0.json, a strict fleet.manifest.yml, and front matter the theme's schema
+# accepts? It reports; it never fails the run (fail-on-error: false).
+#
+# Deliberately schedule + dispatch only, never pull_request or push: until
+# bamr87/zer0-CMS ships the reusable workflow on main this caller has nothing
+# to call, and a PR trigger would redden every pull request in the meantime.
+# It is not a gate — build-validate.yml is.
+#
+# Makes no model call and reads no secret, so it needs no *_ENABLED switch and
+# no fleet.manifest.yml lane (like build-validate.yml and site-health.yml).
+#
+# No timeout-minutes on the job: GitHub rejects that key on a job that calls a
+# reusable workflow; the called workflow's own jobs carry the timeout.
+#
+# Locally, from a zer0-CMS checkout:
+#   ruby -I rails/lib rails/bin/zer0-cms doctor /path/to/bash-365.com
+
+name: zer0 doctor
+
+on:
+  schedule:
+    - cron: '29 6 * * 3' # weekly, Wednesday 06:29 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zer0-doctor
+  cancel-in-progress: true
+
+jobs:
+  doctor:
+    uses: bamr87/zer0-CMS/.github/workflows/zer0-doctor.yml@main
+    with:
+      fail-on-error: false
