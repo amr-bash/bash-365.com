@@ -7,12 +7,23 @@
   // Derived from the corpus itself — the content folders are the five real
   // collections under pages/, and the taxonomy below is the set of categories
   // actually in use, not an aspiration.
+  //
+  // Required fields follow this repo's own validator, scripts/content_lint.py
+  // (the CI `Content lint` job): a dated post needs POST_REQUIRED_FIELDS, a
+  // service page needs its description. The lint exempts the section index
+  // files under pages/_posts/ (*-index.md); the console does not know that
+  // rule, so it will flag them — leave their front matter alone.
+
+  // A Jekyll site on the zer0-mistakes theme (collections_dir: pages).
+  "platform": { "id": "jekyll", "overlay": "zer0-mistakes" },
 
   "contentFolders": [
     {
       "title": "Posts",
       "path": "[[workspace]]/pages/_posts",
-      "contentTypes": ["post"]
+      "contentTypes": ["post"],
+      // content_lint: the filename date must equal the `date` field.
+      "filePrefix": "{{date|yyyy-MM-dd}}"
     },
     {
       "title": "Toolkit",
@@ -27,7 +38,7 @@
     {
       "title": "Services",
       "path": "[[workspace]]/pages/_services",
-      "contentTypes": ["doc"]
+      "contentTypes": ["service"]
     },
     {
       "title": "About",
@@ -40,20 +51,42 @@
     {
       "name": "post",
       "fields": [
-        { "name": "title", "type": "string", "required": true },
-        { "name": "description", "type": "string", "required": true },
-        { "name": "author", "type": "string" },
+        { "name": "title", "type": "string", "required": true, "description": "No exclamation marks." },
+        { "name": "description", "type": "string", "required": true, "description": "120–155 characters, no trailing period." },
+        { "name": "author", "type": "string", "required": true },
         { "name": "layout", "type": "choice", "choices": ["article", "news", "section", "default"] },
-        { "name": "date", "type": "datetime" },
-        { "name": "lastmod", "type": "datetime" },
+        { "name": "date", "type": "datetime", "required": true, "isPublishDate": true },
+        { "name": "lastmod", "type": "datetime", "required": true, "isModifiedDate": true },
+        { "name": "draft", "type": "boolean" },
+        // content_lint hard-errors on a block sequence here: categories and
+        // tags must stay flow lists, `tags: [a, b]`. The schema has no option
+        // to force that style, so edit these keys with a writer that keeps the
+        // style the line already has.
+        { "name": "categories", "type": "categories", "required": true },
+        { "name": "tags", "type": "tags", "required": true },
+        { "name": "keywords", "type": "list" },
+        { "name": "excerpt", "type": "string" },
+        { "name": "preview", "type": "image", "required": true, "isPreviewImage": true, "description": "Short form: /images/previews/<slug>.png (docs/preview-images.md)." },
+        { "name": "featured", "type": "boolean" },
+        { "name": "permalink", "type": "string" }
+      ]
+    },
+    {
+      "name": "service",
+      "fields": [
+        { "name": "title", "type": "string", "required": true },
+        { "name": "description", "type": "string", "required": true, "description": "120–155 characters, no trailing period." },
+        { "name": "sub-title", "type": "string" },
+        { "name": "snippet", "type": "string" },
+        { "name": "author", "type": "string" },
+        { "name": "layout", "type": "string" },
+        { "name": "permalink", "type": "string" },
+        { "name": "lastmod", "type": "datetime", "isModifiedDate": true },
         { "name": "draft", "type": "boolean" },
         { "name": "categories", "type": "categories" },
         { "name": "tags", "type": "tags" },
         { "name": "keywords", "type": "list" },
-        { "name": "excerpt", "type": "string" },
-        { "name": "preview", "type": "image" },
-        { "name": "featured", "type": "boolean" },
-        { "name": "permalink", "type": "string" }
+        { "name": "preview", "type": "image", "isPreviewImage": true }
       ]
     },
     {
@@ -64,7 +97,7 @@
         { "name": "sub-title", "type": "string" },
         { "name": "layout", "type": "string" },
         { "name": "permalink", "type": "string" },
-        { "name": "lastmod", "type": "datetime" },
+        { "name": "lastmod", "type": "datetime", "isModifiedDate": true },
         { "name": "topic", "type": "string" },
         { "name": "topic_label", "type": "string" },
         { "name": "level", "type": "string" },
@@ -79,13 +112,20 @@
     "tags": []
   },
 
+  // content_lint blocks any draft value other than false from shipping.
+  "draftField": { "name": "draft", "type": "boolean" },
+
   "content": {
     "publicFolder": "assets"
   },
 
+  // content_lint warns on any date that is not ISO-8601 with milliseconds.
+  "date": { "format": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", "timezone": "UTC" },
+
   "seo": {
     "titleLength": 60,
-    "descriptionLength": 160,
+    // content_lint's DESC_MAX; 156–160 warns, longer fails a post or service.
+    "descriptionLength": 155,
     "slugLength": 75,
     "contentLength": 1760
   },
@@ -106,5 +146,16 @@
     // Off. Publishing here goes through the Python lane and CI; until someone
     // decides otherwise, the editor is preview-and-draft only.
     "publishAllow": false
+  },
+
+  "cms": {
+    // The editorial gate CI runs; exit 1 on errors.
+    "verifyCommand": "python3 scripts/content_lint.py"
+  },
+
+  "fleet": {
+    "enabled": true,
+    "manifestPath": "fleet.manifest.yml",
+    "hub": "bamr87/bamr87"
   }
 }

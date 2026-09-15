@@ -98,12 +98,17 @@ favicon:
 info_banner              : '/assets/images/network.jpg' # path of fallback teaser image, e.g. "/assets/images/500x300.png"
 
 ## Preview Image Generation (AI-powered) #####################################
-# Settings for automatic preview image generation using AI
-# Used by: scripts/generate-preview-images.sh
+# Settings for automatic preview image generation using AI — the ONE
+# preview_images: block. Every key below is one the zer0-image-generator gem
+# documents (https://github.com/bamr87/zer0-image-generator#configuration).
+# Used by: the gem (root Gemfile; `bundle exec jekyll preview-images`) and
+# scripts/generate-preview-images.sh, which the content loop still calls.
+# `collections` is unset on purpose: the gem's default, [posts], is the scope
+# both generators already scan on this site.
 
 preview_images:
   enabled                : true
-  provider               : 'openai'           # openai, stability, local
+  provider               : 'openai'           # openai | xai | stability | gemini | local
   model                  : 'gpt-image-2'      # gpt-image-2 (latest), gpt-image-1, gpt-image-1-mini; dall-e-3 is retired on this account
   size                   : '1536x1024'        # gpt-image landscape: 1536x1024, square: 1024x1024, portrait: 1024x1536, auto
   quality                : 'high'             # gpt-image quality: low, medium, high, auto (DALL-E's 'standard'/'hd' are not valid here)
@@ -608,6 +613,7 @@ exclude:
   - docker-compose.yml
   - package.json
   - frontmatter.json
+  - zer0.json            # zer0-CMS project config (was served at /zer0.json)
   # NOTE: CNAME (Pages custom domain), staticwebapp.config.json (Azure reads it
   # from the deployed root), favicon.ico, LICENSE and llms.txt stay published on
   # purpose — do not add them here.
