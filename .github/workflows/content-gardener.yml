@@ -4,12 +4,20 @@
 # repo's editorial instructions — and opens a pull request for human review.
 # It never pushes to main.
 #
+# OFF by default on the schedule: the weekly run idles until the repo VARIABLE
+# CONTENT_GARDENER_ENABLED is "true" — the kill switch. The bot token cannot set
+# variables, so the gardener can never enable itself. A manual run
+# (workflow_dispatch) works without the variable — a human pressed the button.
+#   gh variable set CONTENT_GARDENER_ENABLED --body true
+#
 # Auth (Settings → Secrets and variables → Actions), OAuth preferred:
 #   1. CLAUDE_CODE_OAUTH_TOKEN — Claude Code OAuth token from `claude setup-token`
 #      (Claude Pro/Max). Used by default when set.
 #   2. ANTHROPIC_API_KEY — workspace API key. Fallback, used when no OAuth token.
 # When neither is set the workflow skips gracefully with a notice instead of
-# failing. If both are set, claude-code-action uses the OAuth token.
+# failing. If both are set, only the OAuth token reaches claude-code-action —
+# the API-key input is blanked by expression, so the key is never billed while
+# the subscription token exists.
 #
 # Optional: add a GARDENER_GITHUB_TOKEN secret (fine-grained PAT with
 # Contents + Pull requests read/write on this repo). PRs opened with the
@@ -45,11 +53,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Check for an Anthropic credential
+      - name: Check the kill switch and an Anthropic credential
         id: gate
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ENABLED: ${{ vars.CONTENT_GARDENER_ENABLED }}
           CONTENT_LOOP_ENABLED: ${{ vars.CONTENT_LOOP_ENABLED }}
           EVENT: ${{ github.event_name }}
         run: |
@@ -58,11 +67,18 @@ jobs:
           if [ "$EVENT" = "schedule" ] && [ "$CONTENT_LOOP_ENABLED" = "true" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::notice::The content loop is enabled (CONTENT_LOOP_ENABLED=true) and covers this schedule — the weekly gardener idles. Run it manually (workflow_dispatch) for an extra piece. See docs/content-loop.md."
-          elif [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          # The kill switch: a scheduled run needs CONTENT_GARDENER_ENABLED=true;
+          # a manual run (workflow_dispatch) proceeds whenever a credential exists.
+          elif [ "$EVENT" = "workflow_dispatch" ] || [ "$ENABLED" = "true" ]; then
+            if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::No Anthropic credential set — skipping the weekly draft. Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions to activate the content gardener."
+            fi
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No Anthropic credential set — skipping the weekly draft. Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions to activate the content gardener."
+            echo "::notice::The content gardener is off (repo variable CONTENT_GARDENER_ENABLED != true) — the weekly schedule idles. Turn it on with: gh variable set CONTENT_GARDENER_ENABLED --body true. A manual run (workflow_dispatch) works without it."
           fi
 
       - name: Checkout
@@ -75,10 +91,11 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          # OAuth token preferred; the action uses it over the API key when both
-          # are provided. API key is the fallback for API-billed runs.
+          # OAuth token preferred. The action does NOT reliably prefer OAuth when
+          # both inputs are given, so the API key is passed ONLY when no OAuth
+          # token exists — this expression, not the action, enforces the order.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' && secrets.ANTHROPIC_API_KEY || '' }}
           github_token: ${{ secrets.GARDENER_GITHUB_TOKEN || github.token }}
           prompt: |
             You are the weekly content gardener for bashconsultants.com, a

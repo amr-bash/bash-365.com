@@ -9,9 +9,16 @@
 #
 # See docs/the-preacher.md for the full canon and how it works.
 #
+# OFF by default on the schedule: the weekly run idles until the repo VARIABLE
+# PREACHER_ENABLED is "true" — the kill switch. The bot token cannot set
+# variables, so the preacher can never enable itself. A manual run
+# (workflow_dispatch) works without the variable — a human pressed the button.
+#   gh variable set PREACHER_ENABLED --body true
+#
 # Auth (Settings → Secrets and variables → Actions), OAuth preferred:
 #   1. CLAUDE_CODE_OAUTH_TOKEN — from `claude setup-token` (Claude Pro/Max). Default.
-#   2. ANTHROPIC_API_KEY — workspace API key. Fallback.
+#   2. ANTHROPIC_API_KEY — workspace API key. Fallback, passed only when no OAuth
+#      token exists (the API-key input is blanked by expression when both are set).
 # With neither set the workflow skips gracefully with a notice instead of failing.
 #
 # Optional: PREACHER_GITHUB_TOKEN — a fine-grained PAT with Contents +
@@ -46,17 +53,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Check for an Anthropic credential
+      - name: Check the kill switch and an Anthropic credential
         id: gate
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ENABLED: ${{ vars.PREACHER_ENABLED }}
+          EVENT: ${{ github.event_name }}
         run: |
-          if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          # The kill switch: a scheduled run needs PREACHER_ENABLED=true; a manual
+          # run (workflow_dispatch) proceeds whenever a credential exists.
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$ENABLED" = "true" ]; then
+            if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::No Anthropic credential set — skipping the weekly preacher. Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions to activate it."
+            fi
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No Anthropic credential set — skipping the weekly preacher. Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions to activate it."
+            echo "::notice::The preacher is off (repo variable PREACHER_ENABLED != true) — the weekly schedule idles. Turn it on with: gh variable set PREACHER_ENABLED --body true. A manual run (workflow_dispatch) works without it."
           fi
 
       - name: Checkout
@@ -79,10 +95,11 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          # OAuth token preferred; the action uses it over the API key when both
-          # are provided. API key is the fallback for API-billed runs.
+          # OAuth token preferred. The action does NOT reliably prefer OAuth when
+          # both inputs are given, so the API key is passed ONLY when no OAuth
+          # token exists — this expression, not the action, enforces the order.
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' && secrets.ANTHROPIC_API_KEY || '' }}
           github_token: ${{ secrets.PREACHER_GITHUB_TOKEN || github.token }}
           prompt: |
             You are THE PREACHER for the bashconsultants repository. Your charter

@@ -131,7 +131,7 @@ includes the reviewer's promotion checklist (move to `pages/_posts/<subfolder>/`
 
 ### Activating the gardener
 
-Add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret (preferred — `claude setup-token`) **or** an `ANTHROPIC_API_KEY` repository secret (repo → Settings → Secrets and variables → Actions). When both are set, `claude-code-action` uses the OAuth token. Without either, the workflow logs a notice and skips — scheduled runs never fail red just because the credential is absent. These are separate from the Azure application settings above; they can be different credentials with different spend caps.
+Two switches, both human-set. First the **kill switch**: the schedule idles until the repository **variable** `CONTENT_GARDENER_ENABLED` is `true` (`gh variable set CONTENT_GARDENER_ENABLED --body true`). The bot token cannot set variables, so the gardener can never enable itself, and flipping the variable back stops it without editing the workflow. A manual `workflow_dispatch` run bypasses the variable — a human pressed the button. Then the **credential**: add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret (preferred — `claude setup-token`) **or** an `ANTHROPIC_API_KEY` repository secret (repo → Settings → Secrets and variables → Actions). When both are set, only the OAuth token is passed to `claude-code-action` — the workflow blanks the API-key input by expression, because the action does not reliably prefer OAuth on its own — so the API key is never billed while the subscription token exists. Without either credential, the workflow logs a notice and skips — scheduled runs never fail red just because the credential is absent. These are separate from the Azure application settings above; they can be different credentials with different spend caps.
 
 When the content loop is enabled (`CONTENT_LOOP_ENABLED=true`), the gardener's schedule stands down and only manual runs proceed — see [`content-loop.md`](./content-loop.md).
 
@@ -172,7 +172,7 @@ File: `.github/workflows/content-review.yml` Schedule: `37 14 * * 4` UTC (Thursd
 
 The content counterpart to the preacher. It adopts the content-curator charter (`.claude/agents/content-curator.md`) and moves the site's content forward by ONE unit each week: it reviews the corpus — starting from the deterministic `scripts/content_inventory.py --focus` shortlist of thin/stale pages — and opens a PR that either **expands** an existing article with more relevant, current information or **writes** a new article filling a real gap. It follows the same editorial authorities as the gardener, gates on `content_lint.py`, and never pushes to `main`.
 
-This complements the **content gardener** (which only drafts brand-new posts): the gardener grows breadth, the curator reviews everything and chooses between depth and breadth. Activate it the same way (a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret; optional `CONTENT_REVIEW_GITHUB_TOKEN`). While the content loop is enabled its schedule stands down (manual runs still work) — the loop's improve mode covers the same ground on a faster cadence.
+This complements the **content gardener** (which only drafts brand-new posts): the gardener grows breadth, the curator reviews everything and chooses between depth and breadth. Activate it the same way: its kill switch is the `CONTENT_REVIEW_ENABLED` repository variable (`gh variable set CONTENT_REVIEW_ENABLED --body true`; manual dispatch bypasses it), plus a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret (OAuth first — the key is passed only when the token is absent); optional `CONTENT_REVIEW_GITHUB_TOKEN`. While the content loop is enabled its schedule stands down (manual runs still work) — the loop's improve mode covers the same ground on a faster cadence.
 
 ## Workflow: Content loop (daily)
 
@@ -194,12 +194,16 @@ Opens (and keeps) a pull request from this fork up to the repository it was fork
 
 File: `.github/workflows/preacher.yml` Schedule: `42 14 * * 6` UTC (Saturdays, morning in Denver), plus manual dispatch with an optional `focus` lens.
 
-The reflexive "practice what we preach" enforcer. It runs the deterministic gates (`scripts/doctrine_check.py`, `scripts/content_lint.py`) first, then does an AI judgment pass against the canon, and either opens ONE findings PR listing doctrine violations (Mode A — Issues are disabled on this repository, so the channel is a PR) or — when the repo is clean — mechanizes one recurring AI-review burden into a new check in `doctrine_check.py` and opens a PR (Mode B). It never pushes to `main`. Full canon and design: [`the-preacher.md`](./the-preacher.md). Activate it the same way as the gardener (a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret; optional `PREACHER_GITHUB_TOKEN`).
+The reflexive "practice what we preach" enforcer. It runs the deterministic gates (`scripts/doctrine_check.py`, `scripts/content_lint.py`) first, then does an AI judgment pass against the canon, and either opens ONE findings PR listing doctrine violations (Mode A — Issues are disabled on this repository, so the channel is a PR) or — when the repo is clean — mechanizes one recurring AI-review burden into a new check in `doctrine_check.py` and opens a PR (Mode B). It never pushes to `main`. Full canon and design: [`the-preacher.md`](./the-preacher.md). Activate it the same way as the gardener: its kill switch is the `PREACHER_ENABLED` repository variable (`gh variable set PREACHER_ENABLED --body true`; manual dispatch bypasses it), plus a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret (OAuth first — the key is passed only when the token is absent); optional `PREACHER_GITHUB_TOKEN`.
 
 ## Cost and safety notes
 
 - Both Anthropic credentials should be workspace-scoped keys with spend caps
   set in the Anthropic console.
+- Every scheduled AI lane is OFF until a human sets its repository variable —
+`CONTENT_LOOP_ENABLED`, `CONTENT_GARDENER_ENABLED`, `CONTENT_REVIEW_ENABLED`, `PREACHER_ENABLED` — and is stopped the same way, without editing a workflow (`gh variable set <NAME> --body false`). Manual `workflow_dispatch` runs bypass the variable. `fleet.manifest.yml` at the repo root inventories the lanes, their switches, and the tokens they use.
+- The agents' shared guardrails — untrusted-input quarantine, the honesty rule,
+  merge discipline — live in `.claude/skills/_shared/quarantine.md`.
 - The chat function enforces model, token, origin, body-size, and rate
   limits server-side; a modified client can't raise them.
 - The gardener writes only to `drafts/` on a new branch, and the preacher only
