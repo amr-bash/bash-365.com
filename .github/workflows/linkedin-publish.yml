@@ -1,45 +1,41 @@
-# Publish to the BASH LinkedIn company page.
+# Publish approved LinkedIn drafts to the BASH company page.
 #
-# Two ways in:
-#   * workflow_dispatch — post one article (by post ref) or a text update on
-#     demand. Defaults to dry-run so the first runs are safe.
-#   * push to main under drafts/linkedin/** — a merged, human-approved draft.
-#     The merge IS the approval gate; this runs `from-drafts` live.
+# The lane lives in zer0-CMS (docs/DISTRIBUTION.md there); this file only calls
+# its reusable workflow. Settings are in zer0.json ("distribution.linkedin");
+# credentials are the LINKEDIN_* Actions secrets.
 #
-# Credentials (Settings → Secrets and variables → Actions):
-#   Secrets: LINKEDIN_ACCESS_TOKEN (required), and optionally
-#            LINKEDIN_REFRESH_TOKEN + LINKEDIN_CLIENT_ID + LINKEDIN_CLIENT_SECRET.
-#   Variables (non-secret): LINKEDIN_ORG_URN, LINKEDIN_BASE_URL, LINKEDIN_API_VERSION.
-# When no token is set the workflow skips gracefully with a notice.
+#   * push to main under drafts/linkedin/** — a merged draft. The merge IS the
+#     approval (zer0.json accepts pending and approved), so this runs live.
+#   * workflow_dispatch — rehearse the queue, or one draft, and publish it only
+#     when "live" is ticked.
+#
+# Every share is a draft a person merged: there is no free-text or
+# post-by-reference input. A live run without LINKEDIN_ACCESS_TOKEN skips with a
+# notice. The ledger (.github/linkedin-log.json) and the draft's new status are
+# committed back with [skip ci]. Issues are disabled on this repository, so a
+# failed run and its job summary are the alert.
 
 name: LinkedIn publish
 
 on:
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: 'What to post'
-        type: choice
-        options: [article, text]
-        default: article
-      ref:
-        description: 'Article mode: post reference (section/YYYY-MM-DD-slug, path, or slug)'
-        required: false
-        default: ''
-      message:
-        description: 'Text mode: the update text'
-        required: false
-        default: ''
-      dry_run:
-        description: 'Render the payload without posting'
-        type: boolean
-        default: true
   push:
     branches: [main]
     paths: ['drafts/linkedin/**']
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'One draft id (a file under drafts/linkedin, without .md); empty for the whole queue'
+        type: string
+        required: false
+        default: ''
+      live:
+        description: 'Publish to LinkedIn (unticked: rehearse only)'
+        type: boolean
+        default: false
 
+# The reusable job commits the ledger and the draft's status back.
 permissions:
-  contents: write   # commit the ledger + flipped draft status back
+  contents: write
 
 concurrency:
   group: linkedin-publish
@@ -47,97 +43,9 @@ concurrency:
 
 jobs:
   publish:
-    name: Publish approved LinkedIn content
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Check for a LinkedIn token
-        id: gate
-        env:
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-        run: |
-          if [ -n "$LINKEDIN_ACCESS_TOKEN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No LINKEDIN_ACCESS_TOKEN set — skipping. Add it under Settings → Secrets and variables → Actions to activate LinkedIn publishing."
-          fi
-          # Live unless this is a dispatch explicitly asking for a dry run.
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
-            echo "live=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "live=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Checkout
-        if: steps.gate.outputs.ready == 'true'
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        if: steps.gate.outputs.ready == 'true'
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-
-      - name: Publish
-        if: steps.gate.outputs.ready == 'true'
-        env:
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-          LINKEDIN_REFRESH_TOKEN: ${{ secrets.LINKEDIN_REFRESH_TOKEN }}
-          LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
-          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
-          LINKEDIN_ORG_URN: ${{ vars.LINKEDIN_ORG_URN }}
-          LINKEDIN_BASE_URL: ${{ vars.LINKEDIN_BASE_URL }}
-          LINKEDIN_API_VERSION: ${{ vars.LINKEDIN_API_VERSION }}
-          # Pass user input via env, never inline into the shell.
-          INPUT_MODE: ${{ inputs.mode }}
-          INPUT_REF: ${{ inputs.ref }}
-          INPUT_MESSAGE: ${{ inputs.message }}
-        run: |
-          set -euo pipefail
-          DRY=""
-          [ "${{ steps.gate.outputs.live }}" = "false" ] && DRY="--dry-run"
-          if [ "${{ github.event_name }}" = "push" ]; then
-            python3 scripts/features/linkedin from-drafts --verbose
-          elif [ "$INPUT_MODE" = "text" ]; then
-            python3 scripts/features/linkedin post-text --message "$INPUT_MESSAGE" $DRY --verbose
-          else
-            python3 scripts/features/linkedin post-article "$INPUT_REF" $DRY --verbose
-          fi
-
-      - name: Commit ledger and draft status
-        if: steps.gate.outputs.ready == 'true' && steps.gate.outputs.live == 'true'
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- .github/linkedin-log.json drafts/linkedin 2>/dev/null; then
-            echo "No ledger or draft changes to commit."
-          else
-            git add .github/linkedin-log.json drafts/linkedin 2>/dev/null || true
-            # [skip ci] prevents this commit from retriggering this workflow.
-            git commit -m "chore(linkedin): record published share(s) [skip ci]"
-            git push
-          fi
-
-      # Issues are disabled on this fork, so a `gh issue create` alert would
-      # fail exactly when publishing breaks. Annotate + summarize instead;
-      # restore an issue alert only if Issues are ever enabled.
-      - name: Report failure in the run summary
-        if: failure() && steps.gate.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          stamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "::error title=LinkedIn publish failed::Publish run failed at ${stamp} — see ${run_url}"
-          {
-            echo "## LinkedIn publish failed"
-            echo
-            echo "Failed at ${stamp}."
-            echo
-            echo "Common causes: an expired 60-day access token (regenerate it, or run the LinkedIn token health workflow), a banned phrase in the commentary, or a LinkedIn API error. See the run log."
-            echo
-            echo "Issues are disabled on this repository, so no issue is filed."
-          } >> "$GITHUB_STEP_SUMMARY"
+    uses: bamr87/zer0-CMS/.github/workflows/zer0-linkedin.yml@main
+    with:
+      command: publish
+      draft: ${{ inputs.draft || '' }}
+      live: ${{ github.event_name == 'push' || inputs.live == true }}
+    secrets: inherit
