@@ -143,11 +143,32 @@
     "enabled": true,
     "draftsFolder": ".zer0/drafts",
     "ledgerPath": ".zer0/ledger.json",
-    // Off. Publishing here goes through the Python lane and CI; until someone
-    // decides otherwise, the editor is preview-and-draft only.
+    // Off. LinkedIn publishing goes through zer0-CMS's distribution lane and
+    // CI (below); until someone decides otherwise, the editor is
+    // preview-and-draft only.
     "publishAllow": false
   },
 
+  // LinkedIn distribution through zer0-CMS (its docs/DISTRIBUTION.md):
+  // `zer0-cms linkedin`, .github/workflows/linkedin-publish.yml and the fleet
+  // CMS all read this block. Settings only — tokens are Actions secrets, and
+  // nothing in this file can arm a live publish.
+  "distribution": {
+    "linkedin": {
+      "author": "urn:li:organization:64517157",
+      "siteUrl": "https://bash-365.com",
+      // The queue and ledger the Python publisher used, so its history holds.
+      "queue": "drafts/linkedin",
+      "ledger": ".github/linkedin-log.json",
+      // Merging a draft to main is the approval: the publish workflow runs on
+      // main with ZER0_LINKEDIN_MERGED=1, so a pending draft there publishes.
+      // Anywhere else — a laptop, the MCP server, the CMS — a draft must be
+      // approved.
+      "acceptStatuses": ["pending", "approved"],
+      "sources": ["posts"],
+      // jekyll-seo-tag's site-wide og_image, for a post whose preview is missing.
+      "fallbackImage": "assets/images/office.jpg"
+    }
   "cms": {
     // The editorial gate CI runs; exit 1 on errors.
     "verifyCommand": "python3 scripts/content_lint.py"

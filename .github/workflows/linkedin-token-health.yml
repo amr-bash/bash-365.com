@@ -1,14 +1,15 @@
-# Weekly LinkedIn token health check.
+# Weekly LinkedIn token health check, through zer0-CMS's distribution lane.
 #
-# LinkedIn access tokens expire 60 days after generation, and programmatic
-# refresh is gated to approved partners — so the realistic failure mode is a
-# silently dead token. This validates the token with a cheap authenticated call
-# and, when it is rejected or within a week of expiry, fails the run with an
-# error annotation and step summary so a human can regenerate it before
-# publishing breaks. (Issues are disabled on this repository, so an
-# issue-based alert can never land here.)
+# LinkedIn access tokens last 60 days, so the realistic failure is a token that
+# died quietly and a merged draft that then fails to publish. This asks LinkedIn
+# about the token — with LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET set it
+# reads the real expiry by introspection; without them it proves the token works
+# with a cheap read — and fails the run when the token is rejected or within 7
+# days of expiry. Issues are disabled on this repository, so the failed run and
+# its job summary are the alert. Skips with a notice when no token is set.
 #
-# Needs LINKEDIN_ACCESS_TOKEN; skips gracefully when it is absent.
+# Renew: `ruby ../zer0-CMS/rails/bin/zer0-cms linkedin connect --site . --print-token`
+# as a page admin, or LinkedIn's token generator, then update the secret.
 
 name: LinkedIn token health
 
@@ -17,6 +18,8 @@ on:
     - cron: '41 13 * * 1' # Mondays 13:41 UTC (~6–7 AM Denver)
   workflow_dispatch:
 
+# The reusable workflow declares no permissions, so this grant is the job's:
+# `status` reads and writes nothing.
 permissions:
   contents: read
 
@@ -26,59 +29,8 @@ concurrency:
 
 jobs:
   check:
-    name: Validate the access token
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Check for a LinkedIn token
-        id: gate
-        env:
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-        run: |
-          if [ -n "$LINKEDIN_ACCESS_TOKEN" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No LINKEDIN_ACCESS_TOKEN set — skipping token health check."
-          fi
-
-      - name: Checkout
-        if: steps.gate.outputs.ready == 'true'
-        uses: actions/checkout@v7
-
-      - name: Set up Python
-        if: steps.gate.outputs.ready == 'true'
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.12'
-
-      - name: Check token
-        if: steps.gate.outputs.ready == 'true'
-        env:
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-          LINKEDIN_REFRESH_TOKEN: ${{ secrets.LINKEDIN_REFRESH_TOKEN }}
-          LINKEDIN_CLIENT_ID: ${{ secrets.LINKEDIN_CLIENT_ID }}
-          LINKEDIN_CLIENT_SECRET: ${{ secrets.LINKEDIN_CLIENT_SECRET }}
-          LINKEDIN_ORG_URN: ${{ vars.LINKEDIN_ORG_URN }}
-          LINKEDIN_API_VERSION: ${{ vars.LINKEDIN_API_VERSION }}
-        run: python3 scripts/features/linkedin check-token --warn-days 7
-
-      # Issues are disabled on this fork, so a `gh issue create` alert would
-      # fail exactly when the token dies. Annotate + summarize instead;
-      # restore an issue alert only if Issues are ever enabled.
-      - name: Report token problem in the run summary
-        if: failure() && steps.gate.outputs.ready == 'true'
-        run: |
-          set -euo pipefail
-          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          stamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "::error title=LinkedIn token needs attention::Token rejected or within 7 days of its 60-day expiry (checked ${stamp}) — see ${run_url}"
-          {
-            echo "## LinkedIn token needs attention"
-            echo
-            echo "The LinkedIn access token is rejected or within 7 days of its 60-day expiry (checked ${stamp})."
-            echo
-            echo "Fix: generate a new token at https://www.linkedin.com/developers/tools/oauth/token-generator (scopes w_organization_social r_organization_social, authorized by a page admin) and update the LINKEDIN_ACCESS_TOKEN secret — or, if programmatic refresh is enabled for the app, run \`python3 scripts/features/linkedin refresh-token\`."
-            echo
-            echo "Issues are disabled on this repository, so no issue is filed."
-          } >> "$GITHUB_STEP_SUMMARY"
+    uses: bamr87/zer0-CMS/.github/workflows/zer0-linkedin.yml@main
+    with:
+      command: status
+      warn-days: 7
+    secrets: inherit

@@ -139,14 +139,15 @@ author:
 
 ## LinkedIn (company page) ####################################################
 
-# Public company-page identity for the org publisher (scripts/features/linkedin)
-# and structured data. The org id/URN are public — not secrets. Access tokens
-# live only in .env (local) and Actions secrets (CI), never here.
+# Public company-page identity. Publishing settings (author, queue, ledger,
+# Linkedin-Version) live in zer0.json "distribution.linkedin", which zer0-CMS's
+# distribution lane reads; it falls back to org_urn here only when that block
+# names no author. The org id/URN are public — not secrets. Access tokens live
+# only in .env (local) and Actions secrets (CI), never here.
 linkedin:
   org_id                   : 64517157
   org_urn                  : "urn:li:organization:64517157"
   company_url              : "https://www.linkedin.com/company/64517157/"
-  api_version              : 202606              # LinkedIn-Version (YYYYMM); bump ~yearly
 
 ## Site Analytics #############################################################
 
