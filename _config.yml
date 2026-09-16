@@ -108,7 +108,7 @@ info_banner              : '/assets/images/network.jpg' # path of fallback tease
 
 preview_images:
   enabled                : true
-  provider               : 'openai'           # openai | xai | stability | gemini | local
+  provider               : 'openai'           # openai | xai | stability | gemini | local — xai runs on a Grok OAuth login (Kilo Code's store); see docs/preview-images.md
   model                  : 'gpt-image-2'      # gpt-image-2 (latest), gpt-image-1, gpt-image-1-mini; dall-e-3 is retired on this account
   size                   : '1536x1024'        # gpt-image landscape: 1536x1024, square: 1024x1024, portrait: 1024x1536, auto
   quality                : 'high'             # gpt-image quality: low, medium, high, auto (DALL-E's 'standard'/'hd' are not valid here)
