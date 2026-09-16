@@ -120,6 +120,21 @@ preview_images:
   auto_prefix            : true               # Auto-add assets_prefix if path doesn't start with it
   # Additional style modifiers applied to all prompts
   style_modifiers        : 'pixelated, retro gaming style, CRT screen glow effect, limited color palette'
+  # Per-collection looks (gem only — the shell script ignores this map). The
+  # retro style above stays the blog's voice; the business-facing sections a
+  # client reads before hiring us get a professional IT look instead. Not in
+  # `collections`, so regenerate these by name:
+  #   bundle exec jekyll preview-images --collection toolkit
+  collection_styles:
+    services:
+      style              : 'polished isometric 3D illustration of enterprise IT systems: server racks, cloud platforms, network links and business applications arranged as one clean, connected architecture; professional IT consulting aesthetic'
+      style_modifiers    : &professional_modifiers 'deep teal and slate-navy palette with cool grays and one restrained crimson accent, soft studio lighting, matte surfaces, subtle grid backdrop, generous negative space, crisp and uncluttered; no people or faces, no logos, no pixel art, no neon, no cartoon characters'
+    toolkit:
+      style              : 'clean technical blueprint illustration: isometric system diagrams, layered architecture and data-flow schematics in precise linework; a professional IT reference-guide aesthetic'
+      style_modifiers    : *professional_modifiers
+    about:
+      style              : 'refined, minimal corporate technology illustration: an orderly operations console of configuration panels, dashboards and connected systems; calm, trustworthy professional IT aesthetic'
+      style_modifiers    : *professional_modifiers
 
 breadcrumbs              : true # true, false (default)
 words_per_minute         : 200

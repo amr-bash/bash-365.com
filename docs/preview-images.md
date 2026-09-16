@@ -10,7 +10,7 @@ How the AI-generated banner images for posts and section pages work, and the rul
 | Engine (zer0 stack) | The `zer0-image-generator` gem in the root `Gemfile` — `bundle exec jekyll preview-images --list-missing` inside the dev container reports what lacks a banner, from the same `preview_images` block. It replaced the vendored `_plugins/preview_image_generator.rb`, whose Liquid filters and tags nothing rendered |
 | Provider / model | OpenAI `gpt-image-2` (configured in the `preview_images` block of `_config.yml`; DALL-E 3 is retired on this account) |
 | Size / quality | `1536x1024` landscape, `high` |
-| Style | Retro pixel art, 8-bit video game aesthetic — the `style` and `style_modifiers` keys in `_config.yml` are the single source of truth for the look |
+| Style | Two looks. **Posts:** retro pixel art, 8-bit video game aesthetic (`style` + `style_modifiers`). **Services, toolkit, about:** a professional IT look — isometric enterprise systems, technical blueprints, and operations consoles in teal and slate navy with one crimson accent, no people (`collection_styles`). The `preview_images` block in `_config.yml` is the single source of truth for both |
 | Output directory | `assets/images/previews/` |
 | API key | `OPENAI_API_KEY`, loaded from `.env` at the repo root (never committed) |
 | Cost | Roughly $0.15–0.20 per image at current pricing — cheap for one post, real money for a `--force` run across the whole site |
@@ -53,6 +53,17 @@ The build auto-prefixes `/assets` (the `assets_prefix` / `auto_prefix` keys in `
 ```
 
 `--force` regenerates even when an image already exists — pair it with `--file` for a single post rather than running it site-wide.
+
+The business-facing sections use the gem, because the shell script only knows the global retro style and would ignore `collection_styles`. They are not in `collections:`, so name them:
+
+```bash
+# Services, toolkit, and about pages — the professional look
+bundle exec jekyll preview-images --collection toolkit --dry-run
+bundle exec jekyll preview-images --collection services --force
+bundle exec jekyll preview-images -f pages/_toolkit/my-new-doc.md
+```
+
+Outside the dev container, the gem's engine runs the same way as a bare script from the repo root: `python3 "$(gem contents zer0-image-generator | grep preview_generator.py)" --collection about`.
 
 ## House rule: the final review pass
 
