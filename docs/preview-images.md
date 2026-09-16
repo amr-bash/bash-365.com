@@ -26,6 +26,8 @@ The image filename is derived from the post's `title:`, not its file path:
 
 Example: `"bashos: the new command-line operating system"` → `bashos-the-new-command-line-operating-system.png`.
 
+The extension is the image's real format: OpenAI renders are `.png`, xAI Grok Imagine renders are `.jpg`. The generator writes whichever it saved into front matter.
+
 Because the filename comes from the title, **changing a title orphans its image**. Regenerate previews only after titles are final, and if you retitle a published piece, regenerate (or rename) its preview in the same change.
 
 ## Frontmatter path rule
@@ -67,17 +69,19 @@ Outside the dev container, the gem's engine runs the same way as a bare script f
 
 ## The xAI option: Grok Imagine on a Kilo Code login
 
-A second renderer that runs on the Grok subscription instead of OpenAI billing. Grok also writes each image prompt and reviews the render, so no Claude token is needed either. Only the gem engine has it; the shell script stays OpenAI-only.
+A second renderer that runs on the Grok subscription instead of OpenAI billing. Grok also writes each image prompt and reviews the render, so no Claude token is needed either. Only the gem engine has it; the shell script stays OpenAI-only. The services, toolkit, and about banners were made this way.
 
 ```bash
 KILO_AUTH_PATH="$HOME/.local/share/kilo/auth.json" XAI_AUTH=oauth \
-  bundle exec jekyll preview-images --collection toolkit --force \
+  bundle exec jekyll preview-images --collection toolkit -j 6 \
   --provider xai --model grok-imagine-image-2.0 --prompt-engine xai --review xai
 ```
 
 - **Credential.** The engine reads the Grok OAuth token from Kilo Code's store (`KILO_AUTH_PATH`; the default path is already on its search list). `XAI_OAUTH_TOKEN` or `~/.grok/auth.json` work too, and `XAI_API_KEY` is the paid fallback. `XAI_AUTH=oauth` pins the subscription token so a stale login fails loudly instead of billing the key.
-- **Expiry.** The engine only reads the token; it never refreshes it. When the run logs `the token … has expired`, use Grok in Kilo Code once so Kilo refreshes its login, then rerun.
-- **Engine version.** Kilo's store and Grok art direction need zer0-image-generator PR #23; the 3:2 banner shape needs the `feat/xai-imagine-aspect` commit on top of it. Neither is in the published gem (0.6.0) yet. Until they are, run that checkout's engine directly: `python3 ../zer0-image-generator/lib/zer0_image_generator/preview_generator.py` with the same flags.
+- **Expiry.** Kilo's access token is short-lived. When it has expired, the engine refreshes it at `auth.x.ai` with the refresh token Kilo saved and writes the new pair back into Kilo's store, so Kilo keeps working too. Only a failed refresh (`invalid_grant`) means signing in to Grok in Kilo Code again.
+- **One run at a time.** Parallel workers inside one run share a single refresh. Two runs started side by side can each refresh, and the second can spend a refresh token the first just rotated. Run collections one after another and use `-j` for speed.
+- **Output.** Imagine answers JPEG at 1248×832 (3:2), about 200 KB. The file is saved as `<slug>.jpg`.
+- **Engine version.** Kilo's store and Grok art direction need zer0-image-generator PR #23. The token refresh, the 3:2 shape, `.jpg` naming, and the Cloudflare-safe `User-Agent` are on the `feat/xai-imagine-kilo-refresh` branch on top of it. None of that is in the published gem (0.6.0) yet. Until it is, run that checkout's engine directly: `python3 ../zer0-image-generator/lib/zer0_image_generator/preview_generator.py` with the same flags.
 - **Settings that carry over.** `collection_styles`, `size` (sent as the nearest Imagine aspect ratio, so `1536x1024` becomes `3:2`), and the front-matter path rules apply unchanged. The `gpt-image-2` model and `quality` do not; the `--model` flag replaces them for the run.
 
 ## House rule: the final review pass
