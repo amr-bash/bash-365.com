@@ -128,7 +128,7 @@ preview_images:
   collection_styles:
     services:
       style              : 'polished isometric 3D illustration of enterprise IT systems: server racks, cloud platforms, network links and business applications arranged as one clean, connected architecture; professional IT consulting aesthetic'
-      style_modifiers    : &professional_modifiers 'deep teal and slate-navy palette with cool grays and one restrained crimson accent, soft studio lighting, matte surfaces, subtle grid backdrop, generous negative space, crisp and uncluttered; no people or faces, no logos, no pixel art, no neon, no cartoon characters'
+      style_modifiers    : &professional_modifiers 'dark slate-navy background, never white or light gray; deep teal and cool-gray elements with one restrained crimson accent, soft studio lighting, matte surfaces, subtle grid backdrop, generous negative space, crisp and uncluttered; no people or faces, no logos, no pixel art, no neon, no cartoon characters'
     toolkit:
       style              : 'clean technical blueprint illustration: isometric system diagrams, layered architecture and data-flow schematics in precise linework; a professional IT reference-guide aesthetic'
       style_modifiers    : *professional_modifiers
