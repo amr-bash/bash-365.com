@@ -2,6 +2,7 @@
 title: "ERP implementation architecture"
 sub-title: "Designing the system of record so migration, cutover, and audit all hold"
 description: A senior reference on ERP implementation architecture for SMB manufacturers and distributors — data model, master data, migration, and cutover discipline
+preview: /images/previews/erp-implementation-architecture.jpg
 excerpt: Data model and chart-of-accounts design, master data governance, integration boundaries, migration and cutover strategy, and testing for SMB ERP projects.
 author: "Amr Abdel-Motaleb"
 layout: default

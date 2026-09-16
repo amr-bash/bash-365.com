@@ -2,6 +2,7 @@
 title: "Google Workspace to Microsoft 365 migration"
 sub-title: "The routing-domain model, the service-account setup, and the failure modes that surface after the batch starts"
 description: How a Google Workspace to Microsoft 365 mailbox migration actually works — routing domains, service-account scopes, staged batches, and the cutover
+preview: /images/previews/google-workspace-to-microsoft-365-migration.jpg
 excerpt: A senior practitioner's walkthrough of the manual Google Workspace to Exchange Online migration — the routing model behind it, the exact Google-side configuration, and the failure modes that only appear once a batch is running.
 author: "Amr Abdel-Motaleb"
 layout: default

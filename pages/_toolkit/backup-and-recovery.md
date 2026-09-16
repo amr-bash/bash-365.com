@@ -2,6 +2,7 @@
 title: "Backups and recovery that actually work"
 sub-title: "Why 'we have backups' is usually a false comfort, and how to fix it before you need it"
 description: A plain-English guide to small business backups and recovery — the 3-2-1 rule, immutable copies, RTO and RPO, and the restore test that proves it works
+preview: /images/previews/backups-and-recovery-that-actually-work.jpg
 excerpt: The difference between having backups and being able to recover — the 3-2-1 rule, offline copies, RTO and RPO, and a quarterly restore test in plain English.
 author: "Amr Abdel-Motaleb"
 layout: default

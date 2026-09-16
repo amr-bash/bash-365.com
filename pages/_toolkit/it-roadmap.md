@@ -2,6 +2,7 @@
 title: "Building a 12-month IT roadmap"
 sub-title: "A simple, prioritized plan for the next year of technology decisions"
 description: How to build a 12-month IT roadmap for your small business — inventory, prioritize by risk and value, budget in ranges, avoid lock-in
+preview: /images/previews/building-a-12-month-it-roadmap.jpg
 excerpt: A plain-English method for planning a year of technology decisions — inventory what you have, sequence by risk and value, and budget in honest ranges.
 author: "Amr Abdel-Motaleb"
 layout: default

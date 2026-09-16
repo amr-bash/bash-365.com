@@ -2,6 +2,7 @@
 title: "The modern data stack, end to end"
 sub-title: "A right-sized ELT-warehouse-BI reference architecture for SMB and mid-market — deterministic pipelines first, dashboards that reconcile"
 description: A reference architecture for a right-sized modern data stack — ELT ingestion, cloud warehouse choice, dbt transformation, semantic layer, and BI delivery
+preview: /images/previews/the-modern-data-stack-end-to-end.jpg
 excerpt: The reference architecture for a right-sized modern data stack — ELT ingestion, a cloud warehouse, dbt-tested transformation, a semantic layer, and governed BI.
 author: "Amr Abdel-Motaleb"
 layout: default

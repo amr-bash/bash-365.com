@@ -2,6 +2,7 @@
 title: "Closing your books faster with automation"
 sub-title: "Cut month-end from three weeks to five days without adding headcount"
 description: A practical guide to a faster month-end close for small businesses using bank feeds, AP automation, reconciliations, and a 5-day close checklist
+preview: /images/previews/closing-your-books-faster-with-automation.jpg
 excerpt: How bank feeds, AP automation, and a simple close calendar shorten month-end from weeks to days while keeping your books audit-ready.
 author: "Amr Abdel-Motaleb"
 layout: default

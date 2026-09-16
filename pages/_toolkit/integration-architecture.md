@@ -2,6 +2,7 @@
 title: "Integration architecture: APIs, events, legacy"
 sub-title: "A reference for connecting SMB systems the way that stays deterministic, replayable, and observable"
 description: A partner reference for integration architecture — API design, event-driven messaging, the outbox pattern, data sync, OAuth2, and legacy modernization
+preview: /images/previews/integration-architecture-apis-events-legacy.jpg
 excerpt: How to connect small-business systems so integrations are deterministic, replayable, and observable — API design, events and the outbox pattern, CDC, OAuth2, and legacy modernization.
 author: "Amr Abdel-Motaleb"
 layout: default

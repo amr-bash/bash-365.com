@@ -2,6 +2,7 @@
 title: Sitemap
 lastmod: 2025-12-30T19:17:52.526Z
 description: Sitemap for the site
+preview: /images/previews/sitemap.jpg
 slug: sitemap
 ---
 

@@ -2,7 +2,7 @@
 title: Finance tech
 sub-title: Accounting systems and financial modeling for growing businesses
 description: Accounting systems, AP automation, and financial modeling for Denver SMBs — from outgrowing QuickBooks to month-end close you can trust
-preview: /assets/images/erd.png
+preview: /images/previews/finance-tech.jpg
 snippet: Build accounting systems, automate AP, and model finance on the tools you already use.
 author: Amr Abdel-Motaleb
 layout: default

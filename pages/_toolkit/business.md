@@ -2,6 +2,7 @@
 title: "The BASH toolkit for your business"
 sub-title: Plain-English, do-it-yourself IT guides for small and medium businesses
 description: Do-it-yourself IT guides for small and medium businesses — cloud, ERP, finance automation, data, AI, and security explained in plain English
+preview: /images/previews/the-bash-toolkit-for-your-business.jpg
 excerpt: DIY guides that help a small-business owner or in-house generalist understand, plan, and do more of their own IT — no jargon, no sales pitch.
 layout: default
 sidebar:

@@ -2,7 +2,7 @@
 title: Cloud architecture
 sub-title: Cloud infrastructure sized and priced for a small business
 description: Cloud architecture and migration for Denver SMBs across AWS, Azure, and GCP — built for reliability, lower cost, and clean accounting integration
-preview: /assets/images/cloud-4273197.svg
+preview: /images/previews/cloud-architecture.jpg
 snippet: Plan, migrate, and run your business on AWS, Azure, or GCP — with cloud infrastructure sized and priced for a small business.
 author: Amr Abdel-Motaleb
 layout: default

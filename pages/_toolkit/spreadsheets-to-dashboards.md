@@ -2,6 +2,7 @@
 title: "From spreadsheets to dashboards"
 sub-title: "Trade copy-paste reports for one source of truth and a handful of numbers you actually trust"
 description: Move from spreadsheets to trustworthy dashboards — pick KPIs that matter, connect your systems, and choose Power BI or Looker Studio
+preview: /images/previews/from-spreadsheets-to-dashboards.jpg
 excerpt: A DIY path from copy-paste spreadsheet reports to a few trustworthy dashboards, without overbuilding a data warehouse you don't need.
 author: "Amr Abdel-Motaleb"
 layout: default

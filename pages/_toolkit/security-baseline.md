@@ -2,6 +2,7 @@
 title: "The security baseline every small business needs"
 sub-title: "The six controls that stop most attacks — and satisfy your cyber-insurance form"
 description: The six security controls every small business needs first, in priority order, plus a 30-minute self-audit and how they map to cyber insurance
+preview: /images/previews/the-security-baseline-every-small-business-needs.jpg
 excerpt: The six security controls to put in place first — MFA, EDR, patching, least privilege, phishing awareness, and tested backups — with a 30-minute self-audit.
 author: "Amr Abdel-Motaleb"
 layout: default

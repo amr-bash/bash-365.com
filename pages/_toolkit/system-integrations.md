@@ -2,6 +2,7 @@
 title: "Making your software talk to each other"
 sub-title: "Stop retyping the same data into five apps — connect your tools instead"
 description: A plain-English guide to connecting your business software with low-code tools or an API so data flows without manual copy-paste
+preview: /images/previews/making-your-software-talk-to-each-other.jpg
 excerpt: What system integration is, when Zapier or an API beats a manual export, and a checklist to map your data flows before you connect anything.
 author: "Amr Abdel-Motaleb"
 layout: default

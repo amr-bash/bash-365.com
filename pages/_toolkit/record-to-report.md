@@ -2,6 +2,7 @@
 title: "Record-to-report automation and controls"
 sub-title: "Engineering the close as a deterministic, auditable pipeline — with AI as a logged preparer, never the signer"
 description: A controls-engineering reference for record-to-report automation — close orchestration, reconciliation tooling, consolidation, and COSO-mapped controls
+preview: /images/previews/record-to-report-automation-and-controls.jpg
 excerpt: How to architect the record-to-report cycle as an auditable pipeline — subledger-to-GL, reconciliations, consolidation, and controls mapped to COSO.
 author: "Amr Abdel-Motaleb"
 layout: default

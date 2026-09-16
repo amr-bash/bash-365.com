@@ -2,6 +2,7 @@
 title: "The BASH engagement method"
 sub-title: "The mission, the principles we adapt, and the full delivery lifecycle — run so the client ends up self-sufficient"
 description: The BASH engagement method and the people-first principles behind it — discovery, target-state architecture, phased delivery, and knowledge transfer
+preview: /images/previews/the-bash-engagement-method.jpg
 excerpt: The full BASH delivery lifecycle — discovery, architecture, phased thin-slice delivery, and knowledge transfer — shaped by a deterministic-first, AI-overlay doctrine.
 author: "Amr Abdel-Motaleb"
 layout: default

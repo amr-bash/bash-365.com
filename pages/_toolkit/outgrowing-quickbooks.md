@@ -2,6 +2,7 @@
 title: "Outgrowing QuickBooks: is it time for ERP?"
 sub-title: "How to tell a real ceiling from a setup problem before you spend six months migrating"
 description: How to tell whether you have outgrown QuickBooks or just set it up poorly, with a decision checklist and honest ERP cost and timeline
+preview: /images/previews/outgrowing-quickbooks-is-it-time-for-erp.jpg
 excerpt: A plain-English test for whether you truly need ERP or just need to fix the QuickBooks setup you already have.
 author: "Amr Abdel-Motaleb"
 layout: default

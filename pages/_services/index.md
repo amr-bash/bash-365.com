@@ -2,7 +2,7 @@
 title: Services
 sub-title: Enterprise-grade IT, sized and priced for small business
 description: Denver IT consulting for small and medium businesses — AI automation, cloud, ERP, finance systems, data and BI, custom software, IT strategy, managed IT
-preview: /assets/images/cld-arch-diagram.png
+preview: /images/previews/services.jpg
 snippet: From cloud and ERP to data, custom software, and IT strategy — practical, enterprise-grade technology for Denver small and medium businesses.
 author: Amr Abdel-Motaleb
 layout: default

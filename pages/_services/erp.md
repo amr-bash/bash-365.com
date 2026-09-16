@@ -2,7 +2,7 @@
 title: ERP consulting
 sub-title: ERP that fits how your shop floor and your books actually work
 description: Technical and functional ERP consulting for Denver-area manufacturers — QAD, Infor, and Oracle implementation, integration, and support
-preview: /assets/images/erd-p-500.png
+preview: /images/previews/erp-consulting.jpg
 snippet: Plan, configure, and support manufacturing ERP — QAD, Infor, and Oracle — with finance and operations that finally talk to each other.
 author: Amr Abdel-Motaleb
 layout: default

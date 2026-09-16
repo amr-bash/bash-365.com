@@ -2,6 +2,7 @@
 title: "Moving to the cloud: a small-business playbook"
 sub-title: "A phased, plain-English path from your server closet to pay-for-use services"
 description: A small-business cloud migration playbook — what moving to the cloud means, honest costs, a phased plan, security basics, and avoiding lock-in
+preview: /images/previews/moving-to-the-cloud-a-small-business-playbook.jpg
 excerpt: What moving to the cloud actually means for a small business, what it costs, and a phased plan you can stage over one to three months.
 author: "Amr Abdel-Motaleb"
 layout: default
