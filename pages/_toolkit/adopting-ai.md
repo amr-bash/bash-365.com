@@ -2,6 +2,7 @@
 title: "Adopting AI in your business without losing control"
 sub-title: "A practical starter for owners who want the upside of AI without the risk"
 description: A plain-English guide to adopting AI in your small business safely, with approved tools, data rules, and a 30-day pilot plan
+preview: /images/previews/adopting-ai-in-your-business-without-losing-contro.jpg
 excerpt: Where AI actually helps in a small business, what data to never paste, how to keep a human in the loop, and a simple 30-day pilot.
 author: "Amr Abdel-Motaleb"
 layout: default

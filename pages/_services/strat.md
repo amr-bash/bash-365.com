@@ -2,7 +2,7 @@
 title: IT strategy
 sub-title: A practical technology roadmap for your business
 description: Vendor-neutral IT strategy for Denver SMBs — a practical technology roadmap, honest build-vs-buy advice, and project oversight you can trust
-preview: /assets/images/cld-arch-diagram.png
+preview: /images/previews/it-strategy.jpg
 snippet: An independent, vendor-neutral roadmap, honest build-vs-buy advice, and oversight to keep your vendors accountable.
 author: Amr Abdel-Motaleb
 layout: default

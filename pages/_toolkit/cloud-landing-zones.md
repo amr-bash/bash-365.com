@@ -2,6 +2,7 @@
 title: "Cloud landing zones and infrastructure as code"
 sub-title: "A reference for standing up multi-account cloud foundations across AWS, Azure, and Google Cloud"
 description: A partner reference for cloud landing zones and infrastructure as code across AWS, Azure, and GCP — accounts, identity, networking, and guardrails
+preview: /images/previews/cloud-landing-zones-and-infrastructure-as-code.jpg
 excerpt: How to build a deterministic, auditable cloud foundation for SMB and mid-market — account structure, identity, hub-spoke networking, guardrails, and infrastructure as code.
 author: "Amr Abdel-Motaleb"
 layout: default

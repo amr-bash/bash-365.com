@@ -2,6 +2,7 @@
 title: "Security architecture for small business"
 sub-title: "An identity-centric, defense-in-depth reference sized for SMB and mid-market — mapped to CIS Controls and the NIST Cybersecurity Framework"
 description: A partner reference for small-business security architecture — identity as the perimeter, pragmatic zero trust, layered defense, and CIS and NIST mapping
+preview: /images/previews/security-architecture-for-small-business.jpg
 excerpt: How to architect security for SMB and mid-market — identity as the perimeter, pragmatic zero trust, layered defense, detection, and control mapping to CIS and NIST CSF.
 author: "Amr Abdel-Motaleb"
 layout: default

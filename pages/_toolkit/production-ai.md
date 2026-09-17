@@ -2,6 +2,7 @@
 title: "Production AI: RAG, agents, guardrails, and evals"
 sub-title: "A reference architecture for shipping LLM systems into SMB back-office work — safely and auditably"
 description: A technical reference for production RAG, tool-use agents, guardrails, and evals when shipping LLM systems for small-business back-office work
+preview: /images/previews/production-ai-rag-agents-guardrails-and-evals.jpg
 excerpt: The architecture behind production LLM systems — retrieval, tool-use agents, guardrails, and evaluation — with the deterministic controls that make them safe to ship.
 author: "Amr Abdel-Motaleb"
 layout: default

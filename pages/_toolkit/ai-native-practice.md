@@ -2,6 +2,7 @@
 title: "Running an AI-native consulting practice"
 sub-title: "The operating model behind BASH — version-controlled prompts, instruction files as editorial law, and agents that draft while humans approve"
 description: How BASH runs an AI-native consulting practice on governed prompts, instruction files, a VS Code prompt orchestrator, and CI build gates
+preview: /images/previews/running-an-ai-native-consulting-practice.jpg
 excerpt: The engineering behind an AI-native practice — prompts as version-controlled units, instruction files as editorial authority, and agents that draft while humans approve.
 author: "Amr Abdel-Motaleb"
 layout: default

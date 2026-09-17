@@ -2,6 +2,7 @@
 title: "Easy but hard: qualifying as a BASH partner"
 sub-title: "A demonstration-based path to partnering with BASH — open to anyone, hard to finish"
 description: Qualify as a BASH consultant by building, not claiming — an open path that starts with a fork and ends with a business tool shipped in public
+preview: /images/previews/easy-but-hard-qualifying-as-a-bash-partner.jpg
 excerpt: How to become a BASH partner — no résumé screen, no credential gate; fork a repo, build a real digital business tool with AI, and show the work in public.
 author: "Amr Abdel-Motaleb"
 layout: default

@@ -1,5 +1,6 @@
 ---
 title: Environment & Build Info
+preview: /images/previews/environment-build-info.jpg
 layout: admin
 icon: bi-hdd-network
 permalink: /about/settings/environment/

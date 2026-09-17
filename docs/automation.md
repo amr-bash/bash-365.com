@@ -2,7 +2,7 @@
 
 This page documents the repo's automation: the GitHub Actions workflows and the Azure Functions app in `api/` that powers the site's AI chat widget. It is an internal operations doc — `docs/` is excluded from the Jekyll build.
 
-The workflows: **build & validate** (the PR gate), **site health** (nightly), **content loop** (daily, activity-driven: a new article every other day and an improvement on the days between — see [`content-loop.md`](./content-loop.md)), **content gardener** (weekly new-post draft), **content review** (weekly expand-or-add), **PR to upstream** (fork sync), and **the preacher** (weekly doctrine enforcement — see [`the-preacher.md`](./the-preacher.md)).
+The workflows: **build & validate** (the PR gate), **Azure Static Web Apps** (OIDC deploy of the Jekyll Azure stack + `/api/chat`), **site health** (nightly), **content loop** (daily, activity-driven: a new article every other day and an improvement on the days between — see [`content-loop.md`](./content-loop.md)), **content gardener** (weekly new-post draft), **content review** (weekly expand-or-add), **PR to upstream** (fork sync), and **the preacher** (weekly doctrine enforcement — see [`the-preacher.md`](./the-preacher.md)).
 
 ## What runs where
 
@@ -10,28 +10,24 @@ The repo deploys to two hosts from the same source:
 
 | Host | Deployed by | Serves |
 | --- | --- | --- |
-| GitHub Pages | GitHub's built-in Pages build (github-pages gem + `remote_theme`) | Static site only. There is no server side, so `/api/chat` does not exist here. |
-| Azure Static Web Apps (SWA) — app `proud-pond-06dc10c1e` | `.github/workflows/azure-static-web-apps-proud-pond-06dc10c1e.yml` | Static site plus managed Azure Functions under `/api/`, and a temporary staging environment per pull request. |
+| Azure Static Web Apps (SWA) — app `swa-bash365-prod` (planned primary) | `.github/workflows/azure-swa.yml` after `./infra/azure/bootstrap.sh` | Static site plus managed Azure Functions under `/api/`, PR staging URLs. Custom domains: `bash-365.com` and `www.bash-365.com` after `./infra/azure/cutover.sh`. |
+| GitHub Pages | GitHub's built-in Pages build (github-pages gem + `remote_theme`) | Static site only. DNS rollback target. `/api/chat` does not exist here. Keep Pages enabled; do not delete the repo `CNAME` file. |
 
-The AI chat widget therefore only has a working backend on the SWA-served host. If the production domain is served by GitHub Pages, either leave `ai_chat.proxy_ready: false` there or point `ai_chat.endpoint` in `_config.yml` at the absolute SWA URL (for example `https://proud-pond-06dc10c1e.<region>.azurestaticapps.net/api/chat`) — cross-origin requests from the production domains are already on the function's origin allowlist.
+The AI chat widget only has a working backend on SWA. `_config.azure.yml` sets `ai_chat.proxy_ready: true`; `_config.yml` keeps it `false`, so a DNS rollback to Pages does not render a dead widget.
 
-> **Current state:** the Azure SWA deploy workflow has been retired (see the
-> CHANGELOG). Production is **GitHub Pages only**, so `/api/chat` is not deployed
-> today; the `api/` app and `staticwebapp.config.json` remain for a future Azure
-> reconfiguration. The LinkedIn automation below runs entirely in GitHub Actions
-> and needs no server-side host.
+Do **not** revive `proud-pond-06dc10c1e` or `.github/workflows/azure-static-web-apps-proud-pond-06dc10c1e.yml`. The LinkedIn automation runs entirely in GitHub Actions and needs no server-side host.
 
 ## The chat proxy (`api/`)
 
-`api/src/functions/chat.js` is an Azure Functions app (Node.js v4 programming model) that SWA builds and hosts automatically because the deploy workflow sets `api_location: "api"`. It implements the zer0-mistakes theme's chat proxy contract, ported from the theme's Cloudflare Worker reference implementation (`templates/deploy/chat-proxy/worker.js` in the theme repo) — chat route only.
+`api/src/functions/chat.js` is an Azure Functions app (Node.js v4 programming model) that `.github/workflows/azure-swa.yml` deploys with `swa deploy --api-location ./api` (prebuilt `_site`, no Oryx). It implements the zer0-mistakes theme's chat proxy contract, ported from the theme's Cloudflare Worker reference implementation (`templates/deploy/chat-proxy/worker.js` in the theme repo) — chat route only.
 
 What it does, in order:
 
 1. Answers `OPTIONS` preflight; rejects anything that isn't `POST`.
 2. Rejects requests whose `Origin` header isn't on the allowlist
 (production domains, this SWA's own hostnames including per-PR staging hostnames, plus anything in the `ALLOWED_ORIGINS` setting).
-3. Returns `503` when `ANTHROPIC_API_KEY` isn't configured, so an
-   accidentally enabled widget fails cleanly.
+3. Returns `503` when neither `CLAUDE_CODE_OAUTH_TOKEN` nor
+   `ANTHROPIC_API_KEY` is configured, so an accidentally enabled widget fails cleanly.
 4. Applies a fixed-window in-memory rate limit per client IP
    (default 20 requests per minute per function instance).
 5. Caps the request body size (default 512 KB) and validates the JSON shape
@@ -52,7 +48,7 @@ Set exactly one (OAuth wins if both are present). The rotating-refresh OAuth mod
 
 The credential is read from the environment at request time and is never sent to the browser, logged, or echoed in error messages. The rate limit keys on the last `X-Forwarded-For` hop (the value Azure's trusted front end appends), not the client-supplied first entry, so a caller can't spoof its way around the cap.
 
-**Response-time ceiling.** SWA managed functions enforce a hard 45-second HTTP response limit. The default model is `claude-opus-4-8` with `MAX_TOKENS_CAP` 4096; a long Opus generation can approach that ceiling. If the widget starts timing out under load, lower `MAX_TOKENS_CAP` (2048 is a comfortable public default) or pin a faster model via `CHAT_MODEL`.
+**Response-time ceiling.** SWA managed functions enforce a hard 45-second HTTP response limit. Bicep/workflow set `MAX_TOKENS_CAP=2048` (code default is 4096). Pin a faster model via `CHAT_MODEL` if generations still approach the ceiling.
 
 Not ported from the worker: the rotating-refresh OAuth mode (needs Cloudflare KV) and the `/api/github/issue` and `/api/github/pull-request` routes (this site runs `ai_chat.github.mode: 'url'`, which opens pre-filled github.com forms and needs no token).
 
@@ -62,21 +58,20 @@ Not ported from the worker: the rotating-refresh OAuth mode (needs Cloudflare KV
 | --- | --- | --- | --- |
 | `CLAUDE_CODE_OAUTH_TOKEN` | One of these two to activate chat | — | Claude Code OAuth token (`claude setup-token`). **Preferred** — used when set. |
 | `ANTHROPIC_API_KEY` | One of these two to activate chat | — | Workspace API key with a spend cap. Fallback, used only when no OAuth token. |
-| `CHAT_MODEL` | No | `claude-opus-4-8` | Model, pinned server-side; the client's `model` field is always ignored. |
-| `MAX_TOKENS_CAP` | No | `4096` | Upper bound on client-requested `max_tokens`. Consider `2048` for the public widget (SWA's 45s response ceiling). |
+| `CHAT_MODEL` | No | `claude-opus-4-8` | Model, pinned server-side; the client's `model` field is always ignored. Bicep sets this. |
+| `MAX_TOKENS_CAP` | No | `2048` on SWA (code default 4096) | Upper bound on client-requested `max_tokens`. Bicep/workflow set 2048 for SWA's 45s ceiling. |
+| `SWA_ORIGIN_PREFIX` | Yes on SWA | first label of `defaultHostname` | Allows this app's default and PR-staging `*.azurestaticapps.net` origins. Never hardcode a previous app name. |
 | `MAX_BODY_BYTES` | No | `524288` | Request body cap in bytes. |
 | `ALLOWED_ORIGINS` | No | production + SWA hostnames | Comma-separated extra origins (e.g. `http://localhost:4000` while testing). |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | No | `20` / `60000` | Requests per window per IP, and window length. |
 | `CHAT_BUFFER_RESPONSE` | No | unset | Set `true` to buffer the upstream response instead of streaming it. |
 
-### Activating the chat widget (two switches)
+### Activating the chat widget
 
-1. **Azure application setting** — in the Azure portal, open the Static Web
-App → Environment variables → add `CLAUDE_CODE_OAUTH_TOKEN` (preferred; run `claude setup-token` to mint one) **or** `ANTHROPIC_API_KEY` for the production environment (and staging, if chat should work on PR previews).
-2. **Site config** — in `_config.yml`, flip `ai_chat.proxy_ready` to `true`.
-The widget renders nothing until this is true, so the order is safe: set the credential first, then flip the flag.
+1. **GitHub Actions secret** — `CLAUDE_CODE_OAUTH_TOKEN` (preferred; `claude setup-token`) **or** `ANTHROPIC_API_KEY`. The production deploy job fails closed if neither is set. After OIDC login it runs `az staticwebapp appsettings set` so the value never lives in Bicep or the repo.
+2. **Site config** — `_config.azure.yml` already sets `ai_chat.proxy_ready: true`. Leave `_config.yml` at `false` so GitHub Pages rollback does not show the widget.
 
-To roll back, flip `proxy_ready` back to `false`; the function keeps running but nothing calls it.
+DNS rollback: point `bash-365.com` back at GitHub Pages. Do not flip `proxy_ready` in `_config.yml`.
 
 Note on the API runtime: SWA picks the managed-functions Node.js version from `platform.apiRuntime` in `staticwebapp.config.json` (in the app source folder). The function uses the Node v4 programming model, which requires Node 18 or newer — the config file should set `"platform": { "apiRuntime": "node:20" }`.
 
@@ -84,7 +79,7 @@ Note on the API runtime: SWA picks the managed-functions Node.js version from `p
 
 File: `.github/workflows/build-validate.yml`
 
-Runs on every push to `main` and on pull requests (with `paths-ignore: extension/**`). It is the quality gate in front of the deploy — the Azure workflow deploys with no validation of its own, so this catches breakage before it ships. Three jobs:
+Runs on every push to `main` and on pull requests (with `paths-ignore: extension/**`). It is the quality gate in front of deploy. `.github/workflows/azure-swa.yml` also rebuilds the Azure stack before `swa deploy`. Three jobs:
 
 - **build-pages** — builds the production GitHub Pages stack (`github-pages`
 gem + `remote_theme: bamr87/zer0-mistakes@v1.26.0`, `_config.yml` only, `--safe`) in a `ruby:3.3` container, proving the Pages build stays green.
@@ -95,9 +90,32 @@ editorial contract (frontmatter completeness, description length, banned-phrase 
 
 Gems are cached between runs; no deploy steps. If any job fails, the PR is blocked (once these checks are made required in branch protection).
 
-## Workflow: Azure Static Web Apps CI/CD — retired
+## Workflow: Azure Static Web Apps
 
-The Azure SWA deploy workflow was **retired** (its deployment token was unset and its Oryx build could not run `bundle`); GitHub Pages is the primary deploy target. The Azure *build* is still validated by the `build-azure` job in build-validate.yml, and the `api/` chat proxy plus `staticwebapp.config.json` remain for a future reconfiguration if Azure hosting is revived. The hosting notes above describe that dormant path; reconciling them fully is a good first task for the preacher.
+File: `.github/workflows/azure-swa.yml`
+
+Provisions nothing. Infra is Bicep + `az` in `infra/azure/`. The workflow authenticates with GitHub OIDC (`azure/login@v2`), builds Jekyll in `ruby:3.3` with `Gemfile.azure` + `_config.yml,_config.azure.yml`, then deploys the prebuilt `_site` and `api/` with the SWA CLI. It fetches the SWA API key at deploy time (`az staticwebapp secrets list`) — no stored `AZURE_STATIC_WEB_APPS_API_TOKEN`, no Oryx.
+
+| GitHub secret | Purpose |
+| --- | --- |
+| `AZURE_CLIENT_ID` | Entra app from `./infra/azure/bootstrap.sh`. Deploy is skipped when unset. |
+| `AZURE_TENANT_ID` | Same. |
+| `AZURE_SUBSCRIPTION_ID` | Same. |
+| `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` | Chat credential. Production deploy fails if both are missing. |
+
+Optional repository variables: `AZURE_RESOURCE_GROUP` (default `rg-bash365-prod`), `AZURE_STATIC_WEB_APP_NAME` (default `swa-bash365-prod`).
+
+PRs deploy to a staging environment named `pr<number>` (Free SKU has three slots; closing the PR deletes it). Staging may 503 on `/api/chat`; that is acceptable.
+
+### One-time bootstrap and DNS cutover
+
+1. `az login` then `./infra/azure/bootstrap.sh` — resource group, Entra app + federated credentials (`repo:bamr87/bashconsultants:ref:refs/heads/main` and `…:pull_request`), Contributor on the RG, Bicep SWA **without** a GitHub `repositoryUrl`.
+2. Paste the printed IDs into GitHub secrets; add the chat credential.
+3. Merge/push so `azure-swa.yml` deploys to the default hostname. Smoke `GET /`, `/404.html`, `/search/`, `/contact/`, and `POST /api/chat` with that origin — expect not 503.
+4. `./infra/azure/cutover.sh` attaches `www.bash-365.com` then `bash-365.com`. Apply **exactly** the TXT/CNAME/ALIAS records Azure prints. Do not guess IPs. Do not attach `bashconsultants.com`.
+5. Rollback = revert DNS to GitHub Pages. Leave Pages enabled.
+
+Phase 2 (not in this change): Terraform/OpenTofu Azure parity in `infra/terraform/`. Do not apply Bicep and Terraform to the same RG.
 
 ## Workflow: Site health (nightly)
 
@@ -131,7 +149,7 @@ includes the reviewer's promotion checklist (move to `pages/_posts/<subfolder>/`
 
 ### Activating the gardener
 
-Add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret (preferred — `claude setup-token`) **or** an `ANTHROPIC_API_KEY` repository secret (repo → Settings → Secrets and variables → Actions). When both are set, `claude-code-action` uses the OAuth token. Without either, the workflow logs a notice and skips — scheduled runs never fail red just because the credential is absent. These are separate from the Azure application settings above; they can be different credentials with different spend caps.
+Two switches, both human-set. First the **kill switch**: the schedule idles until the repository **variable** `CONTENT_GARDENER_ENABLED` is `true` (`gh variable set CONTENT_GARDENER_ENABLED --body true`). The bot token cannot set variables, so the gardener can never enable itself, and flipping the variable back stops it without editing the workflow. A manual `workflow_dispatch` run bypasses the variable — a human pressed the button. Then the **credential**: add a `CLAUDE_CODE_OAUTH_TOKEN` repository secret (preferred — `claude setup-token`) **or** an `ANTHROPIC_API_KEY` repository secret (repo → Settings → Secrets and variables → Actions). When both are set, only the OAuth token is passed to `claude-code-action` — the workflow blanks the API-key input by expression, because the action does not reliably prefer OAuth on its own — so the API key is never billed while the subscription token exists. Without either credential, the workflow logs a notice and skips — scheduled runs never fail red just because the credential is absent. These are separate from the Azure application settings above; they can be different credentials with different spend caps.
 
 When the content loop is enabled (`CONTENT_LOOP_ENABLED=true`), the gardener's schedule stands down and only manual runs proceed — see [`content-loop.md`](./content-loop.md).
 
@@ -139,40 +157,36 @@ Optional: add a `GARDENER_GITHUB_TOKEN` secret — a fine-grained personal acces
 
 ## Workflow: LinkedIn publishing
 
-Publishes to the BASH LinkedIn **company page** (`urn:li:organization:64517157`) the same way the gardener drafts posts: **agents draft, a human approves, a script posts.** It handles article link-shares of blog posts and standalone text updates. Native long-form LinkedIn Articles are not API-publishable — "article" here means a link-share card.
+Publishes to the BASH LinkedIn **company page** (`urn:li:organization:64517157`) the same way the gardener drafts posts: **agents draft, a human approves, the lane posts.** It handles link shares of blog posts and standalone text updates. Native long-form LinkedIn Articles are not API-publishable — "article" here means a link-share card.
 
-**The engine** — `scripts/features/linkedin/` (stdlib-only Python, run as `python3 scripts/features/linkedin <command>`). It maps a post's frontmatter to the Posts API payload, uploads the post's `preview` image as the card thumbnail via the Images API, posts to `/rest/posts`, and records the returned URN in `.github/linkedin-log.json` so a source is never posted twice. `--dry-run` renders the exact payload with zero API calls. Full usage: `scripts/features/linkedin/README.md`.
+**The engine is zer0-CMS, not this repository.** The site plugs into zer0-CMS's distribution lane: one stdlib Ruby pipeline behind the `zer0-cms linkedin` CLI, a reusable workflow, an MCP server and the fleet CMS's `/admin/distribution` screen. Its design of record — every gate, and the complete list of LinkedIn calls it can make — is zer0-CMS [`docs/DISTRIBUTION.md`](https://github.com/bamr87/zer0-CMS/blob/main/docs/DISTRIBUTION.md). This site supplies only settings, in `zer0.json` → `distribution.linkedin`: the page's URN, the `drafts/linkedin/` queue, the `.github/linkedin-log.json` ledger, `acceptStatuses: ["pending", "approved"]` (a merge is the approval: the workflow on `main` runs with `ZER0_LINKEDIN_MERGED=1`, and anywhere else a draft must be `approved`), `sources: ["posts"]`, and the `office.jpg` fallback card. The lane maps a post to the Posts API payload with its commentary escaped for LinkedIn, uploads the post's `preview` image as the card thumbnail, posts, and records the returned URN under the post's canonical URL so a page is never posted twice. `zer0-cms linkedin preview` renders the exact request, the brand guard and every gate with no network call. With zer0-CMS checked out beside this repository: `ruby ../zer0-CMS/rails/bin/zer0-cms linkedin status --site .`.
 
-**The governed flow.** `/linkedin-draft <post|text>` (the
-`.claude/commands/linkedin-draft.md` command + the `linkedin-share` skill) drafts on-brand commentary into `drafts/linkedin/<date>-<slug>.md` at `status: pending` and opens a PR. A human edits and **merges** it — the merge is the approval.
+**The governed flow.** `/linkedin-draft <post|text>` (the `.claude/commands/linkedin-draft.md` command + the `linkedin-share` skill) scaffolds a draft with `zer0-cms linkedin draft`, writes on-brand commentary into `drafts/linkedin/<date>-<slug>.md` at `status: pending`, and opens a PR. A human edits and **merges** it — the merge is the approval.
 
 Files:
 
-- `.github/workflows/linkedin-publish.yml` — runs on `workflow_dispatch` (post
-one article or text update, dry-run by default) and on push to `main` under `drafts/linkedin/**` (a merged draft runs `from-drafts` live). It commits the ledger and the flipped draft status back with `[skip ci]` so the write never retriggers the workflow.
-- `.github/workflows/linkedin-token-health.yml` — weekly; validates the token
-with a cheap authenticated call and fails the run with an error annotation and step summary when it is rejected or within 7 days of its 60-day expiry (Issues are disabled on this repository, so no issue is filed).
+- `.github/workflows/linkedin-publish.yml` — a caller of zer0-CMS's `zer0-linkedin.yml`. On push to `main` under `drafts/linkedin/**` (a merged draft) it publishes the queue live; `workflow_dispatch` rehearses the queue or one draft and publishes only when `live` is ticked. It commits the ledger and the draft's `published` status back with `[skip ci]`. There is no free-text or post-by-reference input: every share is a draft a person merged.
+- `.github/workflows/linkedin-token-health.yml` — weekly; the same workflow's `status` command introspects the token (when the app credentials are secrets) or proves it with a cheap read, and fails the run when the token is rejected or within 7 days of expiry (Issues are disabled on this repository, so the failed run and its summary are the alert).
+- `.mcp.json` — the `zer0-linkedin` MCP server (`zer0-cms linkedin mcp`): status, sources, queue, preview and draft for Claude Code. Its publish tool stays off unless the operator starts it with `ZER0_LINKEDIN_MCP_PUBLISH=1` and `ZER0_LINKEDIN_PUBLISH=1`.
+- `.github/linkedin-log.json` — the ledger, including the 2026-07-30 QuickBooks share.
 
 ### Activating LinkedIn publishing
 
-The app must already have Community Management API access (scopes `w_organization_social` + `r_organization_social`). Then:
+The LinkedIn app needs Community Management API access — for the page, `w_organization_social`, `r_organization_social`, and `rw_organization_admin` for the page-role check and statistics. The application answers are [`linkedin-api-application.md`](./linkedin-api-application.md). zer0-CMS's `zer0-linkedin.yml` must be on its `main` first, since both workflows call it there. Then:
 
-1. Generate a 60-day token at
-   <https://www.linkedin.com/developers/tools/oauth/token-generator>, authorized
-by a page admin, and add repo **secrets** (Settings → Secrets and variables → Actions): `LINKEDIN_ACCESS_TOKEN` (required), and — only if the app has programmatic refresh — `LINKEDIN_REFRESH_TOKEN`, `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`.
-2. Optionally set repo **variables** (non-secret) `LINKEDIN_ORG_URN`,
-`LINKEDIN_BASE_URL`, `LINKEDIN_API_VERSION` to override the built-in defaults (`urn:li:organization:64517157`, `https://bash-365.com`, `202606`).
-3. Without `LINKEDIN_ACCESS_TOKEN`, both workflows skip with a notice — scheduled
-   runs never fail red just because the credential is absent.
+1. Get a token as a page admin — `ruby ../zer0-CMS/rails/bin/zer0-cms linkedin connect --site . --print-token` (needs `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` in the environment and `http://127.0.0.1:8765/callback` registered on the app), or LinkedIn's [token generator](https://www.linkedin.com/developers/tools/oauth/token-generator) — and add repo **secrets** (Settings → Secrets and variables → Actions): `LINKEDIN_ACCESS_TOKEN`, optionally `LINKEDIN_CLIENT_ID` + `LINKEDIN_CLIENT_SECRET` (so token health reads the real expiry), and `LINKEDIN_REFRESH_TOKEN` only if LinkedIn enabled refresh for the app.
+2. Settings live in `zer0.json`; there are no repository variables to set, and no file can arm a live publish — the workflow sets `ZER0_LINKEDIN_PUBLISH=1` for the publish step alone.
+3. Without `LINKEDIN_ACCESS_TOKEN`, both workflows skip with a notice — scheduled runs never fail red just because the credential is absent.
 
-**Token lifecycle.** Access tokens last 60 days; programmatic refresh is gated to approved partners. If refresh is enabled, `python3 scripts/features/linkedin refresh-token` renews it; otherwise regenerate manually when the token-health workflow warns. The `LinkedIn-Version` string also expires ~yearly — bump `LINKEDIN_API_VERSION`.
+**Token lifecycle.** Access tokens last 60 days. With a refresh token and the app credentials, the lane refreshes once on a 401; otherwise renew with `connect` or the token generator when the token-health workflow warns. The `Linkedin-Version` header expires when LinkedIn's twelve-month support window closes — set `apiVersion` in `zer0.json` (the lane defaults to `202608`); `zer0 doctor` warns two months ahead.
+
 ## Workflow: Content review (weekly)
 
 File: `.github/workflows/content-review.yml` Schedule: `37 14 * * 4` UTC (Thursdays, morning in Denver), plus manual dispatch with optional `mode` (expand / new / auto) and `focus` inputs.
 
 The content counterpart to the preacher. It adopts the content-curator charter (`.claude/agents/content-curator.md`) and moves the site's content forward by ONE unit each week: it reviews the corpus — starting from the deterministic `scripts/content_inventory.py --focus` shortlist of thin/stale pages — and opens a PR that either **expands** an existing article with more relevant, current information or **writes** a new article filling a real gap. It follows the same editorial authorities as the gardener, gates on `content_lint.py`, and never pushes to `main`.
 
-This complements the **content gardener** (which only drafts brand-new posts): the gardener grows breadth, the curator reviews everything and chooses between depth and breadth. Activate it the same way (a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret; optional `CONTENT_REVIEW_GITHUB_TOKEN`). While the content loop is enabled its schedule stands down (manual runs still work) — the loop's improve mode covers the same ground on a faster cadence.
+This complements the **content gardener** (which only drafts brand-new posts): the gardener grows breadth, the curator reviews everything and chooses between depth and breadth. Activate it the same way: its kill switch is the `CONTENT_REVIEW_ENABLED` repository variable (`gh variable set CONTENT_REVIEW_ENABLED --body true`; manual dispatch bypasses it), plus a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret (OAuth first — the key is passed only when the token is absent); optional `CONTENT_REVIEW_GITHUB_TOKEN`. While the content loop is enabled its schedule stands down (manual runs still work) — the loop's improve mode covers the same ground on a faster cadence.
 
 ## Workflow: Content loop (daily)
 
@@ -194,12 +208,16 @@ Opens (and keeps) a pull request from this fork up to the repository it was fork
 
 File: `.github/workflows/preacher.yml` Schedule: `42 14 * * 6` UTC (Saturdays, morning in Denver), plus manual dispatch with an optional `focus` lens.
 
-The reflexive "practice what we preach" enforcer. It runs the deterministic gates (`scripts/doctrine_check.py`, `scripts/content_lint.py`) first, then does an AI judgment pass against the canon, and either opens ONE findings PR listing doctrine violations (Mode A — Issues are disabled on this repository, so the channel is a PR) or — when the repo is clean — mechanizes one recurring AI-review burden into a new check in `doctrine_check.py` and opens a PR (Mode B). It never pushes to `main`. Full canon and design: [`the-preacher.md`](./the-preacher.md). Activate it the same way as the gardener (a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret; optional `PREACHER_GITHUB_TOKEN`).
+The reflexive "practice what we preach" enforcer. It runs the deterministic gates (`scripts/doctrine_check.py`, `scripts/content_lint.py`) first, then does an AI judgment pass against the canon, and either opens ONE findings PR listing doctrine violations (Mode A — Issues are disabled on this repository, so the channel is a PR) or — when the repo is clean — mechanizes one recurring AI-review burden into a new check in `doctrine_check.py` and opens a PR (Mode B). It never pushes to `main`. Full canon and design: [`the-preacher.md`](./the-preacher.md). Activate it the same way as the gardener: its kill switch is the `PREACHER_ENABLED` repository variable (`gh variable set PREACHER_ENABLED --body true`; manual dispatch bypasses it), plus a `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret (OAuth first — the key is passed only when the token is absent); optional `PREACHER_GITHUB_TOKEN`.
 
 ## Cost and safety notes
 
 - Both Anthropic credentials should be workspace-scoped keys with spend caps
   set in the Anthropic console.
+- Every scheduled AI lane is OFF until a human sets its repository variable —
+`CONTENT_LOOP_ENABLED`, `CONTENT_GARDENER_ENABLED`, `CONTENT_REVIEW_ENABLED`, `PREACHER_ENABLED` — and is stopped the same way, without editing a workflow (`gh variable set <NAME> --body false`). Manual `workflow_dispatch` runs bypass the variable. `fleet.manifest.yml` at the repo root inventories the lanes, their switches, and the tokens they use.
+- The agents' shared guardrails — untrusted-input quarantine, the honesty rule,
+  merge discipline — live in `.claude/skills/_shared/quarantine.md`.
 - The chat function enforces model, token, origin, body-size, and rate
   limits server-side; a modified client can't raise them.
 - The gardener writes only to `drafts/` on a new branch, and the preacher only

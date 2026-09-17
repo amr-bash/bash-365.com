@@ -2,6 +2,7 @@
 title: "Building a native Claude context framework"
 sub-title: "Turn a codebase into a governed AI system — rules in files, reusable skills, agents that draft, humans who approve"
 description: Turn a repository into a governed AI context framework — instruction files, skills, subagents, commands, and hooks that make AI output repeatable
+preview: /images/previews/building-a-native-claude-context-framework.jpg
 excerpt: The engineering pattern behind an AI-native practice — a layered context framework, built with this repository as the worked example, that any team can adopt.
 author: "Amr Abdel-Motaleb"
 layout: default

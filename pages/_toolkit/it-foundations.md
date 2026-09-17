@@ -2,6 +2,7 @@
 title: "The small-business IT foundation"
 sub-title: "The eight IT basics every small business needs, and how they fit together"
 description: A plain-English guide to small business IT foundations — accounts, devices, network, files, backup, and security explained without the jargon
+preview: /images/previews/the-small-business-it-foundation.jpg
 excerpt: The baseline IT capabilities every small business needs, framed as a maturity ladder with a one-page self-assessment you can run this week.
 author: "Amr Abdel-Motaleb"
 layout: default

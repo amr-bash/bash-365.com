@@ -14,7 +14,7 @@ The site uses `jekyll-theme-zer0` as a **remote theme** (declared in `_config.ym
 1. **Match the theme's file path exactly** to override a single file (e.g. override `_includes/header.html` by creating one with the same name locally).
 2. **Don't fork the whole theme locally.** Only commit files you've actually changed. Empty/identical overrides cause drift.
 3. **Don't modify the theme version** in `Gemfile` without testing a full Docker build.
-4. **Custom plugins** in `_plugins/` (e.g. `preview_image_generator.rb`) are loaded after theme plugins; document any side effects at the top of the file.
+4. **Custom plugins** in `_plugins/` (e.g. `obsidian_links.rb`) are loaded after theme plugins; document any side effects at the top of the file.
 
 ## Config layering
 

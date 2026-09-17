@@ -52,6 +52,7 @@ exclude:
   - docker-compose.yml
   - package.json
   - frontmatter.json
+  - zer0.json
   - .sass-cache/
   - .jekyll-cache/
   - .obsidian
@@ -64,6 +65,7 @@ exclude:
   - api/
   - drafts/
   - extension/
+  - infra/
   - Gemfile.lock
   - gemfiles/
   - Gemfile

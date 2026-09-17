@@ -1,5 +1,6 @@
 ---
 title: Configuration (Legacy)
+preview: /images/previews/configuration-legacy.jpg
 excerpt: Redirects to the new admin Configuration Utility.
 lastmod: 2026-04-06T00:00:00.000Z
 permalink: /about/site/config/

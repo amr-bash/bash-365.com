@@ -50,10 +50,14 @@ Every push to `main` triggers two deploys, gated by CI:
 
 | Stack | Config | Theme | Notes |
 | --- | --- | --- | --- |
-| GitHub Pages | `_config.yml` | `remote_theme: bamr87/zer0-mistakes@v1.26.0` (safe mode) | Static only; custom `_plugins/` do not run |
-| Azure Static Web Apps | `_config.yml` + `_config.azure.yml` (`Gemfile.azure`) | `jekyll-theme-zer0 ~> 1.26.0` gem | Also hosts the `/api/` chat function; PRs get a staging URL |
+| GitHub Pages | `_config.yml` | `remote_theme: bamr87/zer0-mistakes@v1.26.0` (safe mode) | Static only; DNS rollback. Custom `_plugins/` do not run |
+| Azure Static Web Apps | `_config.yml` + `_config.azure.yml` (`Gemfile.azure`) | `jekyll-theme-zer0` gem | `/api/chat`, PR staging. IaC in `infra/azure/`; deploy is `.github/workflows/azure-swa.yml` |
 
 `.github/workflows/build-validate.yml` builds **both** production stacks and runs the content linter on every push and pull request. Automation (nightly site-health, weekly content drafts, the AI chat proxy) is documented in [`docs/automation.md`](docs/automation.md).
+
+## The zer0 stack
+
+This site is a consumer of the zer0 stack: the [`zer0-mistakes`](https://github.com/bamr87/zer0-mistakes) theme (`remote_theme` in `_config.yml`, with every deliberate fork declared in [`.theme-overrides.yml`](.theme-overrides.yml)), the [`zer0-image-generator`](https://github.com/bamr87/zer0-image-generator) gem for preview banners (root `Gemfile`, configured by the one `preview_images:` block in `_config.yml`), and [zer0-CMS](https://github.com/bamr87/zer0-CMS), which reads [`zer0.json`](zer0.json) for the content folders and the required front matter. `.github/workflows/zer0-doctor.yml` runs zer0-CMS's report-only contract check every week, or on demand from the Actions tab; from a zer0-CMS checkout, run it locally with `ruby -I rails/lib rails/bin/zer0-cms doctor /path/to/bash-365.com`.
 
 ## Repository layout
 
@@ -68,6 +72,7 @@ pages/_posts/          Blog posts, by section: corp / erp / muses / tech
 pages/_services/       Service detail pages + hub
 pages/_case-studies/   Anonymized engagement snapshots
 api/                   Azure Functions app (AI chat proxy)
+infra/azure/           Bicep + az bootstrap/cutover for Static Web Apps
 scripts/               Preview-image generator, content linter, playbook data
 extension/             VS Code extension (independent sub-project)
 .github/               AI-agent instructions, prompt library, workflows

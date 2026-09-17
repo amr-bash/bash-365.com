@@ -1,5 +1,6 @@
 ---
 title: Theme Customizer
+preview: /images/previews/theme-customizer.jpg
 layout: admin
 icon: bi-palette
 permalink: /about/settings/theme/

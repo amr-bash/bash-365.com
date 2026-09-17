@@ -1,0 +1,261 @@
+# Azure Static Web Apps — OIDC deploy of the prebuilt Jekyll Azure stack.
+#
+# Does not use Oryx and does not store AZURE_STATIC_WEB_APPS_API_TOKEN.
+# azure/login (Entra federated credential) → az staticwebapp secrets list →
+# swa deploy ./_site --api-location ./api.
+#
+# Bootstrap (one-time, local az): ./infra/azure/bootstrap.sh
+# Custom domains (after default-hostname smoke): ./infra/azure/cutover.sh
+#
+# Required secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,
+# and CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY.
+# Optional variables: AZURE_RESOURCE_GROUP, AZURE_STATIC_WEB_APP_NAME.
+#
+# Skips deploy when AZURE_CLIENT_ID is unset (bootstrap not done).
+# Fails closed on production when the chat credential is missing.
+
+name: Azure Static Web Apps
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'extension/**'
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    paths-ignore:
+      - 'extension/**'
+  workflow_dispatch:
+
+concurrency:
+  group: azure-swa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+  AZURE_STATIC_WEB_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
+
+jobs:
+  build:
+    name: Build (Azure stack)
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: ruby:3.3
+    env:
+      BUNDLE_GEMFILE: Gemfile.azure
+      BUNDLE_PATH: vendor/bundle
+      JEKYLL_ENV: production
+      PAGES_REPO_NWO: ${{ github.repository }}
+      JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Cache gems
+        uses: actions/cache@v6
+        with:
+          path: vendor/bundle
+          key: gems-azure-${{ runner.os }}-${{ hashFiles('Gemfile.azure') }}
+          restore-keys: gems-azure-${{ runner.os }}-
+
+      - name: Install gems
+        run: |
+          bundle config set --local jobs 4
+          bundle install
+
+      - name: Build (gem theme, _config.yml + _config.azure.yml)
+        run: bundle exec jekyll build --trace --config _config.yml,_config.azure.yml --destination _site
+
+      - name: Sanity-check output
+        run: |
+          set -eux
+          test -s _site/index.html
+          test -s _site/404.html
+          test -s _site/search/index.html
+          test -s _site/contact/index.html
+          test -s _site/staticwebapp.config.json
+          cp -f staticwebapp.config.json _site/staticwebapp.config.json
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: azure-site
+          path: _site
+          retention-days: 3
+
+  deploy:
+    name: Deploy (skip Oryx)
+    needs: build
+    if: github.event.action != 'closed' && secrets.AZURE_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download site artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: azure-site
+          path: _site
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve SWA names
+        id: names
+        run: |
+          set -euo pipefail
+          RG="${AZURE_RESOURCE_GROUP:-rg-bash365-prod}"
+          APP="${AZURE_STATIC_WEB_APP_NAME:-swa-bash365-prod}"
+          echo "rg=${RG}" >> "$GITHUB_OUTPUT"
+          echo "app=${APP}" >> "$GITHUB_OUTPUT"
+          HOST="$(az staticwebapp show --name "$APP" --resource-group "$RG" --query defaultHostname -o tsv)"
+          echo "host=${HOST}" >> "$GITHUB_OUTPUT"
+          echo "prefix=https://${HOST%%.*}" >> "$GITHUB_OUTPUT"
+
+      - name: Require chat credential on production
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ] && [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "Production deploy requires CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY." >&2
+            exit 1
+          fi
+
+      - name: Install API deps and SWA CLI
+        run: |
+          npm install --prefix api
+          npm install -g @azure/static-web-apps-cli@2
+
+      - name: Deploy prebuilt _site + api/
+        id: swa
+        env:
+          RG: ${{ steps.names.outputs.rg }}
+          APP: ${{ steps.names.outputs.app }}
+        run: |
+          set -euo pipefail
+          export SWA_CLI_DEPLOYMENT_TOKEN
+          SWA_CLI_DEPLOYMENT_TOKEN="$(az staticwebapp secrets list --name "$APP" --resource-group "$RG" --query properties.apiKey -o tsv)"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ENV_NAME="pr${{ github.event.pull_request.number }}"
+          else
+            ENV_NAME="production"
+          fi
+          swa deploy ./_site --api-location ./api --env "$ENV_NAME"
+          echo "env=${ENV_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Set production app settings
+        if: github.event_name != 'pull_request'
+        env:
+          RG: ${{ steps.names.outputs.rg }}
+          APP: ${{ steps.names.outputs.app }}
+          PREFIX: ${{ steps.names.outputs.prefix }}
+        run: |
+          set -euo pipefail
+          SETTINGS=(
+            "CHAT_MODEL=claude-opus-4-8"
+            "MAX_TOKENS_CAP=2048"
+            "SWA_ORIGIN_PREFIX=${PREFIX}"
+          )
+          if [ -n "${CLAUDE_CODE_OAUTH_TOKEN}" ]; then
+            SETTINGS+=("CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}")
+          fi
+          if [ -n "${ANTHROPIC_API_KEY}" ]; then
+            SETTINGS+=("ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}")
+          fi
+          az staticwebapp appsettings set \
+            --name "$APP" \
+            --resource-group "$RG" \
+            --setting-names "${SETTINGS[@]}"
+
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          RG: ${{ steps.names.outputs.rg }}
+          APP: ${{ steps.names.outputs.app }}
+          ENV_NAME: ${{ steps.swa.outputs.env }}
+          DEFAULT_HOST: ${{ steps.names.outputs.host }}
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const rg = process.env.RG;
+            const app = process.env.APP;
+            const envName = process.env.ENV_NAME;
+            let url = `https://${process.env.DEFAULT_HOST}`;
+            try {
+              const host = execSync(
+                `az staticwebapp environment list --name ${app} --resource-group ${rg} --query "[?name=='${envName}' || contains(name, '${envName}')].hostname | [0]" -o tsv`,
+                { encoding: 'utf8' }
+              ).trim();
+              if (host) url = host.startsWith('http') ? host : `https://${host}`;
+            } catch (err) {
+              core.warning(`Could not resolve preview hostname: ${err.message}`);
+            }
+            const marker = '<!-- azure-swa-preview -->';
+            const body = `${marker}\nAzure SWA preview: ${url}\n`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  close-preview:
+    name: Close preview environment
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && secrets.AZURE_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Delete staging environment
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          RG="${AZURE_RESOURCE_GROUP:-rg-bash365-prod}"
+          APP="${AZURE_STATIC_WEB_APP_NAME:-swa-bash365-prod}"
+          ENV_NAME="pr${PR}"
+          if az staticwebapp environment show --name "$APP" --resource-group "$RG" --environment-name "$ENV_NAME" >/dev/null 2>&1; then
+            az staticwebapp environment delete --name "$APP" --resource-group "$RG" --environment-name "$ENV_NAME" --yes
+            echo "Deleted staging environment ${ENV_NAME}."
+          else
+            echo "No staging environment ${ENV_NAME} to delete."
+          fi

@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "zer0-linkedin": {
+      "type": "stdio",
+      "command": "ruby",
+      "args": ["${ZER0_CMS_DIR:-../zer0-CMS}/rails/bin/zer0-cms", "linkedin", "mcp", "--site", "."],
+      "env": {}
+    }
+  }
+}

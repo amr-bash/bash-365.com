@@ -4,7 +4,7 @@ name: Amr Abdel-Motaleb
 avatar: /assets/images/Amr-Headshot_v2.jpg
 excerpt: Solutions architect with a finance and IT background — ERP, financial systems, and data work for manufacturers and growing businesses.
 description: The finance-plus-IT background behind BASH Consulting — ERP, financial systems, and data work across 15 years of enterprise projects
-preview: /assets/images/red-rocks.jpg
+preview: /images/previews/amr-abdel-motaleb.jpg
 location: Denver, CO
 email: null
 website: https://it-journey.dev

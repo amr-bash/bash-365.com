@@ -141,7 +141,7 @@ The credential chain the generator calls (`python3 scripts/features/lib/xai_auth
 
 Backward-compatibility wrapper that forwards all arguments to `features/generate-preview-images`. The VS Code tasks in `.vscode/tasks.json` call this wrapper.
 
-Related: `_plugins/preview_image_generator.rb` provides the Jekyll side (Liquid filters/tags and a build-time report of missing previews). Its defaults are kept in sync with `_config.yml` and the script above.
+Related: the `zer0-image-generator` gem (root `Gemfile`) is the zer0 stack's engine for the same job — `bundle exec jekyll preview-images --list-missing` reads the same `preview_images` block in `_config.yml`. It replaced the vendored `_plugins/preview_image_generator.rb`, whose Liquid filters and tags nothing rendered. This script stays while `.github/workflows/content-loop.yml` and `.vscode/tasks.json` call it.
 
 ## Setup helpers
 

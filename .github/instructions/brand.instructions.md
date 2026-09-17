@@ -83,6 +83,7 @@ Full UI ramp lives in `_config.yml` under `theme_color:` (hex values **must** st
 
 - Article and page banners are **AI-generated** from each piece's own title and description by the
 preview pipeline (`scripts/generate-preview-images.sh`), then stored under `assets/images/previews/`. Regenerate after a title changes — the image derives from it.
+- **Two banner looks, split by audience.** Blog posts keep the retro pixel-art style, where the `bash` motif plays. The services, toolkit, and about sections, which a buyer reads before hiring us, use a professional IT look: isometric systems, blueprints, and consoles in teal and slate navy with one crimson accent, and no people. Both are set in `preview_images` in `_config.yml` (`collection_styles` for the sections); see `docs/preview-images.md`.
 - Alt text describes the *content* of an image, never "banner" or "screenshot of…".
 - Prefer SVG for diagrams, PNG for screenshots. Diagrams (Mermaid) inherit theme colors.
 

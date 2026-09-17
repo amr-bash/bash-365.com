@@ -2,7 +2,7 @@
 title: Data and BI
 sub-title: Dashboards and reporting you can trust, sized for a small business
 description: Data warehousing, reporting, and business intelligence for Denver SMBs — turn ERP and accounting data into dashboards you can trust
-preview: /assets/images/cld-arch-diagram.png
+preview: /images/previews/data-and-bi.jpg
 snippet: Turn ERP, accounting, and spreadsheet data into clean dashboards and reports your team can run themselves.
 author: Amr Abdel-Motaleb
 layout: default

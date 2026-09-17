@@ -2,7 +2,7 @@
 title: "Managed IT services"
 sub-title: Helpdesk, monitoring, and patching without a full-time hire
 description: Managed IT services for Denver small businesses — helpdesk, monitoring, patching, and verified backups with response windows agreed up front
-preview: /assets/images/network-4430786.jpg
+preview: /images/previews/managed-it-services.jpg
 snippet: Helpdesk, monitoring, patching, and verified backups for businesses with no in-house IT — or one IT person who needs backup.
 author: Amr Abdel-Motaleb
 layout: default

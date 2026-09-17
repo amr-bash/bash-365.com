@@ -2,6 +2,7 @@
 title: "The deterministic-first doctrine"
 sub-title: "Why we put auditable automation under everything and treat AI as an overlay"
 description: The engineering doctrine behind BASH — deterministic auditable automation as the substrate, AI as an overlay off the critical path of any fact
+preview: /images/previews/the-deterministic-first-doctrine.jpg
 excerpt: Why deterministic, idempotent, auditable automation goes under everything, where AI belongs as an overlay, and how the split maps to controls and evidence.
 author: "Amr Abdel-Motaleb"
 layout: default

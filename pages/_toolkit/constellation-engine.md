@@ -2,6 +2,7 @@
 title: "Constellation: any shape as interactive light"
 sub-title: "A dependency-free particle engine for SVG, text, live terminal sessions, and 3D point clouds, with scenes designed as data"
 description: A dependency-free JavaScript particle engine that renders SVG logos, typed terminal text, and 3D point clouds as interactive stars, configured in YAML
+preview: /images/previews/constellation-any-shape-as-interactive-light.jpg
 excerpt: The engine behind the homepage mark, opened up — sources for SVG, text, live terminal sessions, images, and point clouds; scenes and timelines as YAML; physics you can tune.
 author: "Amr Abdel-Motaleb"
 layout: default

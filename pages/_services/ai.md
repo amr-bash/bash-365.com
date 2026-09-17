@@ -2,7 +2,7 @@
 title: "AI solutions and intelligent automation"
 sub-title: Practical automation with a person approving what matters
 description: AI consulting for Denver SMBs — document processing, workflow automation, and forecasting layered on the ERP and accounting systems you already run
-preview: /assets/images/pixel-cells-3974184.svg
+preview: /images/previews/ai-solutions-and-intelligent-automation.jpg
 snippet: Automate document handling, reporting, and repetitive back-office work with AI that runs on your own systems — and keeps a person approving what matters.
 author: Amr Abdel-Motaleb
 layout: default

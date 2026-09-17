@@ -2,7 +2,7 @@
 title: Software development
 sub-title: Custom software and integrations for small business
 description: Custom software, API integrations, and legacy modernization for Denver SMBs — connect the systems you run and automate the manual work
-preview: /assets/images/architecture-video-rendering.png
+preview: /images/previews/software-development.jpg
 snippet: Custom apps, API integrations, and legacy modernization to connect your systems and cut manual work.
 author: Amr Abdel-Motaleb
 layout: default

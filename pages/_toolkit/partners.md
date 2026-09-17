@@ -2,6 +2,7 @@
 title: "The BASH toolkit for partners"
 sub-title: Advanced technical training for the consultants who build these systems
 description: Advanced technical training for IT consultants — production AI, cloud landing zones, ERP and data architecture, and security frameworks
+preview: /images/previews/the-bash-toolkit-for-partners.jpg
 excerpt: Deep, wide technical reference for senior practitioners — the architectures, frameworks, and trade-offs behind every capability BASH delivers.
 layout: default
 sidebar:
