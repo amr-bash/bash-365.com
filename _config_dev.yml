@@ -65,6 +65,7 @@ exclude:
   - api/
   - drafts/
   - extension/
+  - infra/
   - Gemfile.lock
   - gemfiles/
   - Gemfile

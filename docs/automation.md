@@ -2,7 +2,7 @@
 
 This page documents the repo's automation: the GitHub Actions workflows and the Azure Functions app in `api/` that powers the site's AI chat widget. It is an internal operations doc — `docs/` is excluded from the Jekyll build.
 
-The workflows: **build & validate** (the PR gate), **site health** (nightly), **content loop** (daily, activity-driven: a new article every other day and an improvement on the days between — see [`content-loop.md`](./content-loop.md)), **content gardener** (weekly new-post draft), **content review** (weekly expand-or-add), **PR to upstream** (fork sync), and **the preacher** (weekly doctrine enforcement — see [`the-preacher.md`](./the-preacher.md)).
+The workflows: **build & validate** (the PR gate), **Azure Static Web Apps** (OIDC deploy of the Jekyll Azure stack + `/api/chat`), **site health** (nightly), **content loop** (daily, activity-driven: a new article every other day and an improvement on the days between — see [`content-loop.md`](./content-loop.md)), **content gardener** (weekly new-post draft), **content review** (weekly expand-or-add), **PR to upstream** (fork sync), and **the preacher** (weekly doctrine enforcement — see [`the-preacher.md`](./the-preacher.md)).
 
 ## What runs where
 
@@ -10,28 +10,24 @@ The repo deploys to two hosts from the same source:
 
 | Host | Deployed by | Serves |
 | --- | --- | --- |
-| GitHub Pages | GitHub's built-in Pages build (github-pages gem + `remote_theme`) | Static site only. There is no server side, so `/api/chat` does not exist here. |
-| Azure Static Web Apps (SWA) — app `proud-pond-06dc10c1e` | `.github/workflows/azure-static-web-apps-proud-pond-06dc10c1e.yml` | Static site plus managed Azure Functions under `/api/`, and a temporary staging environment per pull request. |
+| Azure Static Web Apps (SWA) — app `swa-bash365-prod` (planned primary) | `.github/workflows/azure-swa.yml` after `./infra/azure/bootstrap.sh` | Static site plus managed Azure Functions under `/api/`, PR staging URLs. Custom domains: `bash-365.com` and `www.bash-365.com` after `./infra/azure/cutover.sh`. |
+| GitHub Pages | GitHub's built-in Pages build (github-pages gem + `remote_theme`) | Static site only. DNS rollback target. `/api/chat` does not exist here. Keep Pages enabled; do not delete the repo `CNAME` file. |
 
-The AI chat widget therefore only has a working backend on the SWA-served host. If the production domain is served by GitHub Pages, either leave `ai_chat.proxy_ready: false` there or point `ai_chat.endpoint` in `_config.yml` at the absolute SWA URL (for example `https://proud-pond-06dc10c1e.<region>.azurestaticapps.net/api/chat`) — cross-origin requests from the production domains are already on the function's origin allowlist.
+The AI chat widget only has a working backend on SWA. `_config.azure.yml` sets `ai_chat.proxy_ready: true`; `_config.yml` keeps it `false`, so a DNS rollback to Pages does not render a dead widget.
 
-> **Current state:** the Azure SWA deploy workflow has been retired (see the
-> CHANGELOG). Production is **GitHub Pages only**, so `/api/chat` is not deployed
-> today; the `api/` app and `staticwebapp.config.json` remain for a future Azure
-> reconfiguration. The LinkedIn automation below runs entirely in GitHub Actions
-> and needs no server-side host.
+Do **not** revive `proud-pond-06dc10c1e` or `.github/workflows/azure-static-web-apps-proud-pond-06dc10c1e.yml`. The LinkedIn automation runs entirely in GitHub Actions and needs no server-side host.
 
 ## The chat proxy (`api/`)
 
-`api/src/functions/chat.js` is an Azure Functions app (Node.js v4 programming model) that SWA builds and hosts automatically because the deploy workflow sets `api_location: "api"`. It implements the zer0-mistakes theme's chat proxy contract, ported from the theme's Cloudflare Worker reference implementation (`templates/deploy/chat-proxy/worker.js` in the theme repo) — chat route only.
+`api/src/functions/chat.js` is an Azure Functions app (Node.js v4 programming model) that `.github/workflows/azure-swa.yml` deploys with `swa deploy --api-location ./api` (prebuilt `_site`, no Oryx). It implements the zer0-mistakes theme's chat proxy contract, ported from the theme's Cloudflare Worker reference implementation (`templates/deploy/chat-proxy/worker.js` in the theme repo) — chat route only.
 
 What it does, in order:
 
 1. Answers `OPTIONS` preflight; rejects anything that isn't `POST`.
 2. Rejects requests whose `Origin` header isn't on the allowlist
 (production domains, this SWA's own hostnames including per-PR staging hostnames, plus anything in the `ALLOWED_ORIGINS` setting).
-3. Returns `503` when `ANTHROPIC_API_KEY` isn't configured, so an
-   accidentally enabled widget fails cleanly.
+3. Returns `503` when neither `CLAUDE_CODE_OAUTH_TOKEN` nor
+   `ANTHROPIC_API_KEY` is configured, so an accidentally enabled widget fails cleanly.
 4. Applies a fixed-window in-memory rate limit per client IP
    (default 20 requests per minute per function instance).
 5. Caps the request body size (default 512 KB) and validates the JSON shape
@@ -52,7 +48,7 @@ Set exactly one (OAuth wins if both are present). The rotating-refresh OAuth mod
 
 The credential is read from the environment at request time and is never sent to the browser, logged, or echoed in error messages. The rate limit keys on the last `X-Forwarded-For` hop (the value Azure's trusted front end appends), not the client-supplied first entry, so a caller can't spoof its way around the cap.
 
-**Response-time ceiling.** SWA managed functions enforce a hard 45-second HTTP response limit. The default model is `claude-opus-4-8` with `MAX_TOKENS_CAP` 4096; a long Opus generation can approach that ceiling. If the widget starts timing out under load, lower `MAX_TOKENS_CAP` (2048 is a comfortable public default) or pin a faster model via `CHAT_MODEL`.
+**Response-time ceiling.** SWA managed functions enforce a hard 45-second HTTP response limit. Bicep/workflow set `MAX_TOKENS_CAP=2048` (code default is 4096). Pin a faster model via `CHAT_MODEL` if generations still approach the ceiling.
 
 Not ported from the worker: the rotating-refresh OAuth mode (needs Cloudflare KV) and the `/api/github/issue` and `/api/github/pull-request` routes (this site runs `ai_chat.github.mode: 'url'`, which opens pre-filled github.com forms and needs no token).
 
@@ -62,21 +58,20 @@ Not ported from the worker: the rotating-refresh OAuth mode (needs Cloudflare KV
 | --- | --- | --- | --- |
 | `CLAUDE_CODE_OAUTH_TOKEN` | One of these two to activate chat | — | Claude Code OAuth token (`claude setup-token`). **Preferred** — used when set. |
 | `ANTHROPIC_API_KEY` | One of these two to activate chat | — | Workspace API key with a spend cap. Fallback, used only when no OAuth token. |
-| `CHAT_MODEL` | No | `claude-opus-4-8` | Model, pinned server-side; the client's `model` field is always ignored. |
-| `MAX_TOKENS_CAP` | No | `4096` | Upper bound on client-requested `max_tokens`. Consider `2048` for the public widget (SWA's 45s response ceiling). |
+| `CHAT_MODEL` | No | `claude-opus-4-8` | Model, pinned server-side; the client's `model` field is always ignored. Bicep sets this. |
+| `MAX_TOKENS_CAP` | No | `2048` on SWA (code default 4096) | Upper bound on client-requested `max_tokens`. Bicep/workflow set 2048 for SWA's 45s ceiling. |
+| `SWA_ORIGIN_PREFIX` | Yes on SWA | first label of `defaultHostname` | Allows this app's default and PR-staging `*.azurestaticapps.net` origins. Never hardcode a previous app name. |
 | `MAX_BODY_BYTES` | No | `524288` | Request body cap in bytes. |
 | `ALLOWED_ORIGINS` | No | production + SWA hostnames | Comma-separated extra origins (e.g. `http://localhost:4000` while testing). |
 | `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | No | `20` / `60000` | Requests per window per IP, and window length. |
 | `CHAT_BUFFER_RESPONSE` | No | unset | Set `true` to buffer the upstream response instead of streaming it. |
 
-### Activating the chat widget (two switches)
+### Activating the chat widget
 
-1. **Azure application setting** — in the Azure portal, open the Static Web
-App → Environment variables → add `CLAUDE_CODE_OAUTH_TOKEN` (preferred; run `claude setup-token` to mint one) **or** `ANTHROPIC_API_KEY` for the production environment (and staging, if chat should work on PR previews).
-2. **Site config** — in `_config.yml`, flip `ai_chat.proxy_ready` to `true`.
-The widget renders nothing until this is true, so the order is safe: set the credential first, then flip the flag.
+1. **GitHub Actions secret** — `CLAUDE_CODE_OAUTH_TOKEN` (preferred; `claude setup-token`) **or** `ANTHROPIC_API_KEY`. The production deploy job fails closed if neither is set. After OIDC login it runs `az staticwebapp appsettings set` so the value never lives in Bicep or the repo.
+2. **Site config** — `_config.azure.yml` already sets `ai_chat.proxy_ready: true`. Leave `_config.yml` at `false` so GitHub Pages rollback does not show the widget.
 
-To roll back, flip `proxy_ready` back to `false`; the function keeps running but nothing calls it.
+DNS rollback: point `bash-365.com` back at GitHub Pages. Do not flip `proxy_ready` in `_config.yml`.
 
 Note on the API runtime: SWA picks the managed-functions Node.js version from `platform.apiRuntime` in `staticwebapp.config.json` (in the app source folder). The function uses the Node v4 programming model, which requires Node 18 or newer — the config file should set `"platform": { "apiRuntime": "node:20" }`.
 
@@ -84,7 +79,7 @@ Note on the API runtime: SWA picks the managed-functions Node.js version from `p
 
 File: `.github/workflows/build-validate.yml`
 
-Runs on every push to `main` and on pull requests (with `paths-ignore: extension/**`). It is the quality gate in front of the deploy — the Azure workflow deploys with no validation of its own, so this catches breakage before it ships. Three jobs:
+Runs on every push to `main` and on pull requests (with `paths-ignore: extension/**`). It is the quality gate in front of deploy. `.github/workflows/azure-swa.yml` also rebuilds the Azure stack before `swa deploy`. Three jobs:
 
 - **build-pages** — builds the production GitHub Pages stack (`github-pages`
 gem + `remote_theme: bamr87/zer0-mistakes@v1.26.0`, `_config.yml` only, `--safe`) in a `ruby:3.3` container, proving the Pages build stays green.
@@ -95,9 +90,32 @@ editorial contract (frontmatter completeness, description length, banned-phrase 
 
 Gems are cached between runs; no deploy steps. If any job fails, the PR is blocked (once these checks are made required in branch protection).
 
-## Workflow: Azure Static Web Apps CI/CD — retired
+## Workflow: Azure Static Web Apps
 
-The Azure SWA deploy workflow was **retired** (its deployment token was unset and its Oryx build could not run `bundle`); GitHub Pages is the primary deploy target. The Azure *build* is still validated by the `build-azure` job in build-validate.yml, and the `api/` chat proxy plus `staticwebapp.config.json` remain for a future reconfiguration if Azure hosting is revived. The hosting notes above describe that dormant path; reconciling them fully is a good first task for the preacher.
+File: `.github/workflows/azure-swa.yml`
+
+Provisions nothing. Infra is Bicep + `az` in `infra/azure/`. The workflow authenticates with GitHub OIDC (`azure/login@v2`), builds Jekyll in `ruby:3.3` with `Gemfile.azure` + `_config.yml,_config.azure.yml`, then deploys the prebuilt `_site` and `api/` with the SWA CLI. It fetches the SWA API key at deploy time (`az staticwebapp secrets list`) — no stored `AZURE_STATIC_WEB_APPS_API_TOKEN`, no Oryx.
+
+| GitHub secret | Purpose |
+| --- | --- |
+| `AZURE_CLIENT_ID` | Entra app from `./infra/azure/bootstrap.sh`. Deploy is skipped when unset. |
+| `AZURE_TENANT_ID` | Same. |
+| `AZURE_SUBSCRIPTION_ID` | Same. |
+| `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` | Chat credential. Production deploy fails if both are missing. |
+
+Optional repository variables: `AZURE_RESOURCE_GROUP` (default `rg-bash365-prod`), `AZURE_STATIC_WEB_APP_NAME` (default `swa-bash365-prod`).
+
+PRs deploy to a staging environment named `pr<number>` (Free SKU has three slots; closing the PR deletes it). Staging may 503 on `/api/chat`; that is acceptable.
+
+### One-time bootstrap and DNS cutover
+
+1. `az login` then `./infra/azure/bootstrap.sh` — resource group, Entra app + federated credentials (`repo:bamr87/bashconsultants:ref:refs/heads/main` and `…:pull_request`), Contributor on the RG, Bicep SWA **without** a GitHub `repositoryUrl`.
+2. Paste the printed IDs into GitHub secrets; add the chat credential.
+3. Merge/push so `azure-swa.yml` deploys to the default hostname. Smoke `GET /`, `/404.html`, `/search/`, `/contact/`, and `POST /api/chat` with that origin — expect not 503.
+4. `./infra/azure/cutover.sh` attaches `www.bash-365.com` then `bash-365.com`. Apply **exactly** the TXT/CNAME/ALIAS records Azure prints. Do not guess IPs. Do not attach `bashconsultants.com`.
+5. Rollback = revert DNS to GitHub Pages. Leave Pages enabled.
+
+Phase 2 (not in this change): Terraform/OpenTofu Azure parity in `infra/terraform/`. Do not apply Bicep and Terraform to the same RG.
 
 ## Workflow: Site health (nightly)
 

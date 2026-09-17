@@ -648,6 +648,7 @@ exclude:
   - api/
   - drafts/
   - extension/
+  - infra/
   # Agent and repository guidance is source-only and contains links that are
   # meaningful in the repository but cannot resolve on the public site.
   - AGENTS.md
