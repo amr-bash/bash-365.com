@@ -13,3 +13,9 @@ plugins:
   - jekyll-seo-tag
   - jekyll-paginate
   - jekyll-relative-links
+
+# Enable the chat widget on the Azure stack only. GitHub Pages keeps
+# ai_chat.proxy_ready: false in _config.yml so a DNS rollback does not
+# render a dead widget. Jekyll deep-merges this hash over the base config.
+ai_chat:
+  proxy_ready: true

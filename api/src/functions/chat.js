@@ -47,6 +47,12 @@
  *   MAX_TOKENS_CAP        — cap on client-requested max_tokens (default 4096)
  *   MAX_BODY_BYTES        — request body cap in bytes (default 524288)
  *   ALLOWED_ORIGINS       — comma-separated extra allowed origins
+ *   SWA_ORIGIN_PREFIX     — hostname stem of this SWA, with or without
+ *                           https:// (e.g. https://swa-bash365-prod or
+ *                           the auto-generated defaultHostname first label).
+ *                           Allows this app's default and PR-staging hosts
+ *                           (*.azurestaticapps.net). Never hardcode a
+ *                           previous app name.
  *   RATE_LIMIT_MAX        — requests per window per IP (default 20)
  *   RATE_LIMIT_WINDOW_MS  — window length in ms (default 60000)
  *   CHAT_BUFFER_RESPONSE  — 'true' to buffer the upstream SSE body instead
@@ -86,8 +92,13 @@ const STATIC_ALLOWED_ORIGINS = [
   'https://bash-365.com',
   'https://www.bash-365.com',
 ];
-const SWA_ORIGIN_PREFIX = 'https://proud-pond-06dc10c1e';
 const SWA_ORIGIN_SUFFIX = '.azurestaticapps.net';
+
+function swaOriginPrefix() {
+  const raw = (process.env.SWA_ORIGIN_PREFIX || '').trim();
+  if (!raw) return '';
+  return raw.startsWith('https://') ? raw : `https://${raw}`;
+}
 
 // --- CORS / origin gate ------------------------------------------------
 
@@ -104,7 +115,8 @@ function originAllowed(origin) {
   // non-browser client, which has no business spending the API credential.
   if (!origin) return false;
   if (allowedOrigins().includes(origin)) return true;
-  return origin.startsWith(SWA_ORIGIN_PREFIX) && origin.endsWith(SWA_ORIGIN_SUFFIX);
+  const prefix = swaOriginPrefix();
+  return Boolean(prefix) && origin.startsWith(prefix) && origin.endsWith(SWA_ORIGIN_SUFFIX);
 }
 
 function corsHeaders(origin) {

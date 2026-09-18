@@ -50,8 +50,8 @@ Every push to `main` triggers two deploys, gated by CI:
 
 | Stack | Config | Theme | Notes |
 | --- | --- | --- | --- |
-| GitHub Pages | `_config.yml` | `remote_theme: bamr87/zer0-mistakes@v1.26.0` (safe mode) | Static only; custom `_plugins/` do not run |
-| Azure Static Web Apps | `_config.yml` + `_config.azure.yml` (`Gemfile.azure`) | `jekyll-theme-zer0 ~> 1.26.0` gem | Also hosts the `/api/` chat function; PRs get a staging URL |
+| GitHub Pages | `_config.yml` | `remote_theme: bamr87/zer0-mistakes@v1.26.0` (safe mode) | Static only; DNS rollback. Custom `_plugins/` do not run |
+| Azure Static Web Apps | `_config.yml` + `_config.azure.yml` (`Gemfile.azure`) | `jekyll-theme-zer0` gem | `/api/chat`, PR staging. IaC in `infra/azure/`; deploy is `.github/workflows/azure-swa.yml` |
 
 `.github/workflows/build-validate.yml` builds **both** production stacks and runs the content linter on every push and pull request. Automation (nightly site-health, weekly content drafts, the AI chat proxy) is documented in [`docs/automation.md`](docs/automation.md).
 
@@ -72,6 +72,7 @@ pages/_posts/          Blog posts, by section: corp / erp / muses / tech
 pages/_services/       Service detail pages + hub
 pages/_case-studies/   Anonymized engagement snapshots
 api/                   Azure Functions app (AI chat proxy)
+infra/azure/           Bicep + az bootstrap/cutover for Static Web Apps
 scripts/               Preview-image generator, content linter, playbook data
 extension/             VS Code extension (independent sub-project)
 .github/               AI-agent instructions, prompt library, workflows
