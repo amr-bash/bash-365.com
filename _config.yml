@@ -44,7 +44,7 @@ portfolio                : &portfolio [*github_user, '.', 'github.io']
 
 ## Site Information ---------------------------------------------------------------
 
-title                    : &title "BASH Consultants"
+title                    : &title "BASH"
 title_url                : "/"
 title_icon               : "globe"
 subtitle                 : "Bourne Again Solutions Hero"
