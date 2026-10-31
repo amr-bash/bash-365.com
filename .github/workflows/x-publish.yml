@@ -1,8 +1,10 @@
 # Publish approved X drafts to the BASH X account (@bamr87).
 #
+# Optional automation. X posting is connected and managed in zer0-CMS's studio
+# (an X channel, Connect with X); this workflow publishes drafts merged here.
 # The lane lives in zer0-CMS (docs/DISTRIBUTION.md § X there); this file only
 # calls its reusable workflow. Settings are in zer0.json ("distribution.x");
-# credentials are the four X_* Actions secrets.
+# credentials are the four X_* Actions secrets, and it is off until they exist.
 #
 #   * push to main under drafts/x/** — a merged draft. The merge IS the
 #     approval (zer0.json accepts pending and approved), so this runs live.

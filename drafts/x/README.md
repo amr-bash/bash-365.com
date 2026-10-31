@@ -2,6 +2,8 @@
 
 A staging area, not an outbox. Each `*.md` at the top level of this folder is one proposed post for the BASH X account (`@bamr87`), waiting on a person.
 
+This queue is the optional GitHub automation. The account is connected and managed in zer0-CMS's studio, which can compose, approve and publish without it; both share `.github/x-log.json`, so nothing goes out twice.
+
 The gate is the LinkedIn queue's (`drafts/linkedin/README.md`): a draft is written here at `status: pending` — by `scripts/x.sh draft`, or by hand — and lands in a pull request. A person edits it and **merges** it; the merge is the approval. `.github/workflows/x-publish.yml` then runs zer0-CMS's X lane live: it checks the token is `@bamr87`'s, posts the draft, records it in `.github/x-log.json`, and sets the draft to `status: published` with its `post_id`.
 
 What a post is: the body, then the page's URL on a line of its own (unless the body already has it). X draws the link card from the page's own card tags, so there is no image to pick. The whole post must fit X's 280 characters as X counts them — a link counts 23 — and the preview says how many it uses.

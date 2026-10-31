@@ -208,9 +208,11 @@ The LinkedIn app needs Community Management API access — for the page, `w_orga
 
 ## Workflow: X publishing
 
-Posts to the BASH X account (**@bamr87**) the way LinkedIn publishing does: **agents draft, a human approves, the lane posts.** It handles link posts of blog posts — the commentary with the post's URL after it, whose card X draws from the page's own `twitter:card` tags — and standalone text posts.
+Posts to the BASH X account (**@bamr87**): **agents draft, a human approves, then it posts.** It handles link posts of blog posts — the commentary with the post's URL after it, whose card X draws from the page's own `twitter:card` tags — and standalone text posts. Its design of record is zer0-CMS [`docs/DISTRIBUTION.md` § X](https://github.com/bamr87/zer0-CMS/blob/main/docs/DISTRIBUTION.md#x).
 
-**The engine is zer0-CMS's X lane**, the LinkedIn lane's twin: `manage.py x`, the reusable `zer0-x.yml`, an MCP server and an X channel in the platform studio's **Distribution** area. Its design of record is zer0-CMS [`docs/DISTRIBUTION.md` § X](https://github.com/bamr87/zer0-CMS/blob/main/docs/DISTRIBUTION.md#x). It keeps its own queue (`drafts/x/`) and ledger (`.github/x-log.json`): the ledger is keyed by canonical URL, so a post already shared on LinkedIn still goes to X once.
+**zer0-CMS is where the account is connected and managed.** The platform is registered with X as an app of its own. An X channel for this site in the studio's **Distribution** area (account `bamr87`, site ledger file `.github/x-log.json`) is connected with **Connect with X**, signed in as @bamr87, through X's OAuth 2.0 consent screen. The platform renews the two-hour token by itself. Composing, approving, publishing and statistics all happen there, and none of it needs this repository's workflows.
+
+**The GitHub automation below is optional.** It is for posts drafted in git: a draft merged under `drafts/x/` is published from CI by zer0-CMS's X lane (`manage.py x`, the reusable `zer0-x.yml`), which signs with OAuth 1.0a keys kept as repo secrets, because a secret cannot follow an OAuth 2.0 token's renewals. It is off until those secrets exist. Both paths use the same ledger, keyed by canonical URL, so a page either one posted is never posted by the other. That ledger is X's own, so a post already shared on LinkedIn still goes to X once.
 
 Files:
 
@@ -223,13 +225,18 @@ Files:
 
 The flow: `scripts/x.sh draft <section/date-slug>` writes `drafts/x/<date>-<slug>.md` at `status: pending` with the post's sub-title, excerpt or description and two hashtags; edit the body in the voice of `brand.instructions.md`, check `scripts/x.sh preview` (the whole post must fit 280 characters as X counts them — a link counts 23), open a PR, and **merge** it.
 
-### Activating X publishing
+### Activating X publishing in zer0-CMS
 
-1. In the X developer console, give the app "Read and write" permission, then take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+1. In the X developer console, set the app's user authentication to OAuth 2.0 for a web app with "Read and write" permission, with the callback `https://<zer0-CMS>/api/v2/distribution/oauth/x/`. Give zer0-CMS its **OAuth 2.0 Client ID and Client Secret** as `X_CLIENT_ID` and `X_CLIENT_SECRET`.
 2. Buy API credits: X's API is pay-per-use. A post carrying a link is billed well above one without (since 2026-04-20; the console shows current rates), and each publish also makes one billed read to check the account.
-3. zer0-CMS's `zer0-x.yml` must be on its `main` first, since both workflows call it there. Until all four secrets exist, both workflows skip with a notice — so a green token-health run has checked nothing until then.
+3. In the studio, add an X channel for this site with account `bamr87` and site ledger file `.github/x-log.json`. Press **Connect with X** while signed in to X as @bamr87, then arm the channel. The deployment also needs `ZER0_X_PUBLISH=1`.
 
-**Token lifecycle.** These OAuth 1.0a tokens do not expire. They stop working when @bamr87 revokes the app, when someone regenerates them in the console, or when the app's permission drops to read-only; the weekly check catches each.
+### Activating the GitHub automation (optional)
+
+1. In the same X app, take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+2. zer0-CMS's `zer0-x.yml` must be on its `main` first, since both workflows call it there. Until all four secrets exist, both workflows skip with a notice — so a green token-health run has checked nothing until then.
+
+**Token lifecycle.** The studio's OAuth 2.0 token renews itself; if X refuses a renewal (the app was revoked), the channel says to connect again. The automation's OAuth 1.0a tokens do not expire. They stop working when @bamr87 revokes the app, when someone regenerates them in the console, or when the app's permission drops to read-only; the weekly check catches each.
 
 ## Workflow: Content review (weekly)
 

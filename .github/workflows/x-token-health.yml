@@ -1,4 +1,6 @@
-# Weekly X credential check, through zer0-CMS's X lane.
+# Weekly X credential check, through zer0-CMS's X lane — for the optional
+# GitHub automation's OAuth 1.0a keys. The studio's X channel renews and checks
+# its own token in zer0-CMS.
 #
 # X's OAuth 1.0a tokens do not expire, so the realistic failure is a token its
 # owner revoked, an app whose permission dropped to read-only, or keys for the
