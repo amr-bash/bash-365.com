@@ -47,6 +47,7 @@ amr:
   location: "Denver, CO"
   avatar: "https://www.bash-365.com/assets/images/Amr-Headshot_v2.jpg"
   github: "bamr87"
+  twitter: "bamr87"
   linkedin: "amrabdel"
   website: "https://www.bash-365.com/about/amr/"
   expertise:
@@ -65,4 +66,6 @@ bash-team:
     governed AI automation within reach of small and medium businesses.
   location: "Denver, CO"
   avatar: "https://www.bash-365.com/assets/brand/favicon.svg"
+  # The BASH X account (zer0.json distribution.x.account): the twitter:creator of team posts.
+  twitter: "bamr87"
   website: "https://www.bash-365.com/about/"

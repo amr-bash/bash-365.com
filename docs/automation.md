@@ -206,6 +206,31 @@ The LinkedIn app needs Community Management API access — for the page, `w_orga
 
 **Token lifecycle.** Access tokens last 60 days. With a refresh token and the app credentials, the lane refreshes once on a 401; otherwise renew with `connect` or the token generator when the token-health workflow warns. The `Linkedin-Version` header expires when LinkedIn's twelve-month support window closes — set `apiVersion` in `zer0.json` (the lane defaults to `202608`); `zer0 doctor` warns two months ahead.
 
+## Workflow: X publishing
+
+Posts to the BASH X account (**@bamr87**) the way LinkedIn publishing does: **agents draft, a human approves, the lane posts.** It handles link posts of blog posts — the commentary with the post's URL after it, whose card X draws from the page's own `twitter:card` tags — and standalone text posts.
+
+**The engine is zer0-CMS's X lane**, the LinkedIn lane's twin: `manage.py x`, the reusable `zer0-x.yml`, an MCP server and an X channel in the platform studio's **Distribution** area. Its design of record is zer0-CMS [`docs/DISTRIBUTION.md` § X](https://github.com/bamr87/zer0-CMS/blob/main/docs/DISTRIBUTION.md#x). It keeps its own queue (`drafts/x/`) and ledger (`.github/x-log.json`): the ledger is keyed by canonical URL, so a post already shared on LinkedIn still goes to X once.
+
+Files:
+
+- `zer0.json` → `distribution.x` — the account (`bamr87`), the queue, the ledger, merge-as-approval, posts only.
+- `.github/workflows/x-publish.yml` — a caller of `zer0-x.yml`. On push to `main` under `drafts/x/**` (a merged draft) it publishes the queue live; `workflow_dispatch` rehearses the queue or one draft and publishes only when `live` is ticked. It commits the ledger and the draft's `published` status back with `[skip ci]`.
+- `.github/workflows/x-token-health.yml` — weekly; asks X which account the token posts as and fails the run when the keys are rejected or belong to anyone but `@bamr87`.
+- `.mcp.json` — the `zer0-x` MCP server (`scripts/x.sh mcp`): status, sources, queue, preview and draft for Claude Code. Its publish tool stays off unless the operator starts it with `ZER0_X_MCP_PUBLISH=1` and `ZER0_X_PUBLISH=1`.
+- `scripts/x.sh` — `scripts/linkedin.sh` with `ZER0_LANE=x`.
+- `_data/authors.yml` → `twitter: bamr87` on both bylines — the theme's author card links to the account. `_config.yml` deliberately sets no `twitter:` block: jekyll-seo-tag would then add `twitter:creator` tags, and it looks bylines up by `_data/authors.yml` key rather than name, so it would emit `@Amr Abdel-Motaleb`. X draws a post's card from the `twitter:card` and Open Graph tags every page already carries.
+
+The flow: `scripts/x.sh draft <section/date-slug>` writes `drafts/x/<date>-<slug>.md` at `status: pending` with the post's sub-title, excerpt or description and two hashtags; edit the body in the voice of `brand.instructions.md`, check `scripts/x.sh preview` (the whole post must fit 280 characters as X counts them — a link counts 23), open a PR, and **merge** it.
+
+### Activating X publishing
+
+1. In the X developer console, give the app "Read and write" permission, then take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+2. Buy API credits: X's API is pay-per-use. A post carrying a link is billed well above one without (since 2026-04-20; the console shows current rates), and each publish also makes one billed read to check the account.
+3. zer0-CMS's `zer0-x.yml` must be on its `main` first, since both workflows call it there. Until all four secrets exist, both workflows skip with a notice — so a green token-health run has checked nothing until then.
+
+**Token lifecycle.** These OAuth 1.0a tokens do not expire. They stop working when @bamr87 revokes the app, when someone regenerates them in the console, or when the app's permission drops to read-only; the weekly check catches each.
+
 ## Workflow: Content review (weekly)
 
 File: `.github/workflows/content-review.yml` Schedule: `37 14 * * 4` UTC (Thursdays, morning in Denver), plus manual dispatch with optional `mode` (expand / new / auto) and `focus` inputs.

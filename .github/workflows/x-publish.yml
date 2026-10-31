@@ -1,0 +1,59 @@
+# Publish approved X drafts to the BASH X account (@bamr87).
+#
+# The lane lives in zer0-CMS (docs/DISTRIBUTION.md § X there); this file only
+# calls its reusable workflow. Settings are in zer0.json ("distribution.x");
+# credentials are the four X_* Actions secrets.
+#
+#   * push to main under drafts/x/** — a merged draft. The merge IS the
+#     approval (zer0.json accepts pending and approved), so this runs live.
+#   * workflow_dispatch — rehearse the queue, or one draft, and publish it only
+#     when "live" is ticked.
+#
+# Every post is a draft a person merged, and the lane refuses a token for any
+# account but distribution.x.account before sending anything. A live run
+# without all four secrets skips with a notice. The ledger (.github/x-log.json)
+# and the draft's new status are committed back with [skip ci]. Issues are
+# disabled on this repository, so a failed run and its job summary are the
+# alert. X bills each request: a post with a link costs more than one without.
+
+name: X publish
+
+on:
+  push:
+    branches: [main]
+    paths: ['drafts/x/**']
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'One draft id (a file under drafts/x, without .md); empty for the whole queue'
+        type: string
+        required: false
+        default: ''
+      live:
+        description: 'Publish to X (unticked: rehearse only)'
+        type: boolean
+        default: false
+
+# The reusable job commits the ledger and the draft's status back.
+permissions:
+  contents: write
+
+concurrency:
+  group: x-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    uses: bamr87/zer0-CMS/.github/workflows/zer0-x.yml@main
+    with:
+      command: publish
+      draft: ${{ inputs.draft || '' }}
+      live: ${{ github.event_name == 'push' || inputs.live == true }}
+    # By name, not `secrets: inherit`: GitHub passes inherited secrets only to a
+    # reusable workflow in the same organization or enterprise, and this one
+    # lives in the bamr87 account, so `inherit` passed nothing.
+    secrets:
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}

@@ -166,6 +166,18 @@ scripts/linkedin.sh preview <draft-id>         # the exact request, the guard, e
 scripts/linkedin.sh mcp                        # the MCP server .mcp.json starts
 ```
 
+### `x.sh`
+
+The same for zer0-CMS's X lane (`manage.py x`): `scripts/linkedin.sh` with `ZER0_LANE=x`, so the one file that knows where zer0-CMS lives stays one file. Settings in `zer0.json` `distribution.x`; the four `X_*` keys from the environment (`.env.example`). Its design: zer0-CMS `docs/DISTRIBUTION.md` § X.
+
+```bash
+scripts/x.sh status [--check]                  # settings, queue, ledger; --check asks X which account the token is
+scripts/x.sh draft tech/2026-10-29-slug        # write a pending draft
+scripts/x.sh preview <draft-id>                # the exact post and its length as X counts it; no network
+scripts/x.sh connect --print-token             # an account's token pair, with the PIN X shows its owner
+scripts/x.sh mcp                               # the MCP server .mcp.json starts
+```
+
 ## Setup helpers
 
 ### `setup-admin-settings.sh`

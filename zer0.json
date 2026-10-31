@@ -170,6 +170,23 @@
       "sources": ["posts"],
       // jekyll-seo-tag's site-wide og_image, for a post whose preview is missing.
       "fallbackImage": "assets/images/office.jpg"
+    },
+    // X distribution through zer0-CMS's X lane (its docs/DISTRIBUTION.md § X):
+    // scripts/x.sh (its `manage.py x`), .github/workflows/x-publish.yml and the
+    // fleet CMS read this block. Settings only — the four X_* keys are Actions
+    // secrets, and nothing in this file can arm a live publish.
+    "x": {
+      // The handle the lane posts as. X posts as whoever the token is, so every
+      // publish first checks the token is this account's and refuses otherwise.
+      "account": "bamr87",
+      "siteUrl": "https://www.bash-365.com",
+      // X's own queue and ledger: the ledger is keyed by canonical URL, and a
+      // post already shared on LinkedIn has still to go to X.
+      "queue": "drafts/x",
+      "ledger": ".github/x-log.json",
+      // As LinkedIn: merging a draft to main is the approval.
+      "acceptStatuses": ["pending", "approved"],
+      "sources": ["posts"]
     }
   },
 

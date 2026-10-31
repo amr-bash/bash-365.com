@@ -1,0 +1,43 @@
+# Weekly X credential check, through zer0-CMS's X lane.
+#
+# X's OAuth 1.0a tokens do not expire, so the realistic failure is a token its
+# owner revoked, an app whose permission dropped to read-only, or keys for the
+# wrong account — and a merged draft that then fails to publish. This asks X
+# which account the token posts as (GET /2/users/me, one billed read) and fails
+# the run when the keys are rejected or the account is not distribution.x.account
+# in zer0.json. Issues are disabled on this repository, so the failed run and its
+# job summary are the alert. Skips with a notice unless all four secrets are set.
+#
+# A skip is green, so a green run proves nothing until the X_* secrets exist:
+# read the run's notice before trusting it.
+#
+# Renew: `scripts/x.sh connect --print-token` signed in as @bamr87, or the X
+# developer console's "Access Token and Secret", then update the secrets.
+
+name: X token health
+
+on:
+  schedule:
+    - cron: '47 13 * * 1' # Mondays 13:47 UTC (~6–7 AM Denver), after LinkedIn's check
+  workflow_dispatch:
+
+# The reusable workflow declares no permissions, so this grant is the job's:
+# `status` reads and writes nothing.
+permissions:
+  contents: read
+
+concurrency:
+  group: x-token-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: bamr87/zer0-CMS/.github/workflows/zer0-x.yml@main
+    with:
+      command: status
+    # By name, not `secrets: inherit` (see x-publish.yml).
+    secrets:
+      X_API_KEY: ${{ secrets.X_API_KEY }}
+      X_API_SECRET: ${{ secrets.X_API_SECRET }}
+      X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+      X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
