@@ -227,13 +227,15 @@ The flow: `scripts/x.sh draft <section/date-slug>` writes `drafts/x/<date>-<slug
 
 ### Activating X publishing in zer0-CMS
 
-1. In the X developer console, set the app's user authentication to OAuth 2.0 for a web app with "Read and write" permission, with the callback `https://<zer0-CMS>/api/v2/distribution/oauth/x/`. Give zer0-CMS its **OAuth 2.0 Client ID and Client Secret** as `X_CLIENT_ID` and `X_CLIENT_SECRET`.
+1. In the X developer console (console.x.com → Apps → the app → Keys & Tokens → OAuth 2.0 Keys → **Set up**), choose "Read and write" and "Web App, Automated App or Bot", with the callback `https://<zer0-CMS>/api/v2/distribution/oauth/x/`. For zer0-CMS running on this machine that is `http://127.0.0.1:8000/api/v2/distribution/oauth/x/`: X wants `127.0.0.1`, not `localhost`, and matches the address exactly. X shows the **OAuth 2.0 Client ID and Client Secret** once, after the save; give them to zer0-CMS as `X_CLIENT_ID` and `X_CLIENT_SECRET`.
 2. Buy API credits: X's API is pay-per-use. A post carrying a link is billed well above one without (since 2026-04-20; the console shows current rates), and each publish also makes one billed read to check the account.
-3. In the studio, add an X channel for this site with account `bamr87` and site ledger file `.github/x-log.json`. Press **Connect with X** while signed in to X as @bamr87, then arm the channel. The deployment also needs `ZER0_X_PUBLISH=1`.
+3. In the studio, register this site (Sites → Register a site, its checkout under zer0-CMS's `SITES_DIR`), then add an X channel for it with account `bamr87` and site ledger file `.github/x-log.json`. Press **Connect with X** while signed in to X as @bamr87 and approve within ten minutes, then arm the channel. The deployment also needs `ZER0_X_PUBLISH=1`.
+
+While @bamr87 protects its posts (X → Settings → Privacy and safety), only its approved followers see what the channel publishes.
 
 ### Activating the GitHub automation (optional)
 
-1. In the same X app, take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+1. In the same X app, take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Generate the access token after the app's permission is "Read and write": a token made before the change keeps the permission it was made with. Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
 2. zer0-CMS's `zer0-x.yml` must be on its `main` first, since both workflows call it there. Until all four secrets exist, both workflows skip with a notice — so a green token-health run has checked nothing until then.
 
 **Token lifecycle.** The studio's OAuth 2.0 token renews itself; if X refuses a renewal (the app was revoked), the channel says to connect again. The automation's OAuth 1.0a tokens do not expire. They stop working when @bamr87 revokes the app, when someone regenerates them in the console, or when the app's permission drops to read-only; the weekly check catches each.
