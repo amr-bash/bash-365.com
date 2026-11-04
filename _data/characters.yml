@@ -48,7 +48,7 @@ campaigns:
       moves:
         - Pair every finance practice with its engineering twin in one sentence.
         - End on a step the reader can try on their own close this month.
-      avoid: ["non-technical", "learn to code" framed as a deficit]
+      avoid: ["non-technical", "learn to code framed as a deficit"]
 
 characters:
   - id: security-officer
@@ -113,7 +113,7 @@ characters:
       with one crimson accent; no people, no text.
     vocabulary:
       use: [work order, scrap, shift, downtime, the floor, cycle count, "who keys it in"]
-      avoid: [digital transformation, "frontline workers" as a label, any jargon left unexplained]
+      avoid: [digital transformation, "frontline workers as a label", any jargon left unexplained]
     rhythm: Plain, unhurried, concrete. Stories from a shift, then the lesson in one line.
     concerns: [data entry that happens twice, systems that need office Wi-Fi, training that takes a whole shift]
     signature_moves: ["Starts with a scene on the floor", "Ends with 'Test it at 2 a.m.'"]
