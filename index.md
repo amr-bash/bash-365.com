@@ -1,6 +1,6 @@
 ---
 title: "Enterprise-grade IT for Denver small businesses"
-sub-title: Helping small businesses navigate through the world of IT disarray
+sub-title: Your books already run like software. We help you own the systems around them.
 description: >-
   Denver IT consulting bringing cloud, ERP, financial systems, and governed AI
   automation within reach of small and medium businesses
@@ -17,8 +17,9 @@ keywords:
 hero_tagline: >-
   BASH Consulting brings the systems large companies run — cloud
   infrastructure, Enterprise Resource Planning (ERP), and financial systems —
-  to businesses with 5 to 200 employees, with artificial intelligence (AI)
-  working under guardrails you can audit.
+  to businesses with 5 to 200 employees. Every step is written down, tested
+  like a reconciliation, and yours to inspect, with artificial intelligence
+  (AI) drafting and a person approving.
 
 # Six industry cards rendered in the "Problems we solve" section.
 industries:
@@ -112,7 +113,7 @@ stats:
 # Rendered as the on-page FAQ and as FAQPage JSON-LD in <head> (theme: jsonld-faq).
 faq_items:
   - question: "What is BASH Consulting?"
-    answer: "BASH Consulting (Bourne Again Solutions) is a Denver-based IT consulting practice that helps small and medium-sized businesses adopt the technology once reserved for large enterprises — cloud infrastructure, ERP systems, financial systems, and AI-assisted automation."
+    answer: "BASH Consulting (Bourne Again Solutions Hero, a nod to the `bash` shell) is a Denver-based IT consulting practice that helps small and medium-sized businesses adopt the technology once reserved for large enterprises — cloud infrastructure, ERP systems, financial systems, and AI-assisted automation."
   - question: "Who does BASH Consulting work with?"
     answer: "Small and medium businesses of roughly 5 to 200 employees — professional-services firms, construction and trades, light manufacturing and distribution, healthcare clinics, multi-location retail, and nonprofits, mostly along the Front Range."
   - question: "What services does BASH Consulting offer?"
@@ -132,10 +133,10 @@ faq_items:
   - question: "Where is BASH Consulting located?"
     answer: "We are based in Denver, Colorado, and serve small and medium businesses along the Front Range and remotely across the cloud platforms we support."
   - question: "How do I get started with BASH Consulting?"
-    answer: "Email us at info@bash-365.com or call 720-352-4641 to schedule a consultation. We start with a discovery conversation to understand your systems and goals before recommending an approach."
+    answer: "Book a free consultation through the contact page, email info@bash-365.com, or call 720-352-4641. The first call covers your systems and the one or two problems that matter most, and you leave with a clearer picture whether or not you hire us."
 tags: [bash, small business, denver, it consulting]
 categories: [it consulting, small business, cloud, ai]
-lastmod: 2026-07-06T12:00:00.000Z
+lastmod: 2026-11-04T12:00:00.000Z
 draft: false
 permalink: /
 ---
