@@ -52,7 +52,7 @@ faq_items:
     answer: "ERP: QAD Enterprise Edition and Mfg/Pro, Infor ERP LN (formerly Baan IV) and CloudSuite Industrial (formerly SyteLine), and Oracle PeopleSoft Financials — the versions we've worked on directly, several of them legacy releases rather than each vendor's current line (QAD's current flagship, for example, is QAD Adaptive ERP). Financial systems: OneStream, Oracle Hyperion (HFM), BlackLine, Trintech, FloQast, NetSuite, SAP Concur, QuickBooks, Sage, and Microsoft Dynamics — in both technical and functional roles."
   - question: "Are you local to Denver?"
     answer: "Yes. BASH Consulting is based in Denver, Colorado, and works with small and medium businesses along the Front Range and remotely across the cloud platforms we support."
-lastmod: 2026-07-06T12:00:00.000Z
+lastmod: 2026-11-04T12:00:00.000Z
 slug: services
 permalink: /services/
 draft: false
@@ -60,7 +60,7 @@ draft: false
 
 BASH Consulting brings enterprise-grade technology — the cloud, ERP, financial systems, and data platforms that used to require a corporate IT department — within reach of small and medium businesses across the Denver metro area. We pair a finance-and-IT background with vendor-neutral experience across AWS, Microsoft, Google, and Oracle, so the recommendation you get is the one that fits your business, not a product someone needs to sell.
 
-True to our name — BASH, *Bourne Again Solutions Hero*, a nod to the `bash` shell — we build on automation that is deterministic and auditable first, then layer modern tooling (including AI) on top. The foundation stays something you can inspect and trust; the overlay makes it faster to build and easier for your team to run.
+True to our name — BASH, *Bourne Again Solutions Hero*, a nod to the `bash` shell — we treat your books and your systems as one thing. A close checklist is a pipeline, a reconciliation is a test, and an approval is a review. So we build on automation that is deterministic and auditable first, then layer modern tooling (including AI) on top. The foundation stays something you can inspect and own; the overlay makes it faster to build and easier for your team to run.
 
 **Where to start:** [[AI solutions and intelligent automation]] · [[Cloud architecture]] · [[ERP consulting]] · [[Finance tech]] · [[Data and BI]] · [[Software development]] · [[IT strategy]] · [[Managed IT services]]. Not sure which fits? Tell us what's slowing you down and we'll point you to the right starting place.
 
@@ -68,7 +68,7 @@ True to our name — BASH, *Bourne Again Solutions Hero*, a nod to the `bash` sh
 
 ## AI solutions and intelligent automation
 
-The intelligence layer that sits on top of everything else we do. We treat AI as an overlay on proven, scriptable automation rather than a replacement for it — the foundation stays deterministic and auditable, and the AI makes it faster to build and accessible to non-technical staff.
+The intelligence layer that sits on top of everything else we do. We treat AI as an overlay on proven, scriptable automation rather than a replacement for it — the foundation stays deterministic and auditable, and the AI makes it faster to build and usable by the finance and operations people who already understand the logic.
 
 **What we do:**
 
@@ -261,6 +261,6 @@ Every engagement follows the same simple arc, scaled to the size of the project:
 
 ## Get started
 
-Tell us what's slowing your business down and we'll recommend where to start — no obligation. Reach us at [{{ site.data.entity.info["contact-email"] }}](mailto:{{ site.data.entity.info["contact-email"] }}) or [{{ site.data.entity.info["contact-phone"] }}](tel:+1{{ site.data.entity.info["contact-phone"] | remove: '-' }}).
+Tell us what's slowing your business down. The first call is free, and you leave with a recommended starting place whether or not you hire us. Reach us at [{{ site.data.entity.info["contact-email"] }}](mailto:{{ site.data.entity.info["contact-email"] }}) or [{{ site.data.entity.info["contact-phone"] }}](tel:+1{{ site.data.entity.info["contact-phone"] | remove: '-' }}).
 
-[Schedule a consultation](/contact/)
+[Book a free consultation](/contact/)
