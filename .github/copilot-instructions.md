@@ -75,8 +75,8 @@ Jekyll content under `pages/` follows standard Jekyll frontmatter: `title`, `des
 ## Editorial Voice (for content under `pages/`)
 
 - Audience: SMB owners and operators evaluating IT consulting.
-- Tone: Professional, plain-language, ROI-focused; avoid jargon without definition.
-- Always tie technical content back to business outcomes.
+- Tone: a practitioner talking to a peer — plain language, the number or risk first, finance and systems ideas translated in the same sentence; avoid jargon without definition.
+- Always tie technical content back to business outcomes, and treat finance and accounting readers as builders, not as non-technical users.
 - **Identity is governed by a single source of truth:** `.github/instructions/brand.instructions.md` (name, mission, voice, doctrine, colors, logo). Read it before brand or positioning work.
 
 ## Hard Rules

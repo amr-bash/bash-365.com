@@ -68,3 +68,21 @@ features:
     surface: cli
     link: "extension"
     docs: "README.md"
+  - id: B365-006
+    title: "Layered brand voice: base, campaign overlays, AI-voiced news-desk characters"
+    description: "Layered voice system (base voice, `campaign:` overlays, `voice:` characters) with non-overridable hard rules and an AI-persona honesty rule; roster in `_data/characters.yml` (schema characters/v1)"
+    implemented: true
+    status: partial
+    prd: [FR3]
+    surface: content
+    link: "_data/characters.yml"
+    docs: "docs/news-desk.md"
+  - id: B365-007
+    title: "In-character drafting for news-desk personas (stretch goal)"
+    description: "Characters draft their own news pieces in character via `.github/prompts/in-character-draft.prompt.md`; drafts only, persona disclosed, human review and merge before publishing; no publishing automation"
+    implemented: false
+    status: planned
+    prd: [FR4]
+    surface: content
+    link: ".github/prompts/in-character-draft.prompt.md"
+    docs: "docs/news-desk.md"

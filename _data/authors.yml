@@ -69,3 +69,18 @@ bash-team:
   # The BASH X account (zer0.json distribution.x.account): the twitter:creator of team posts.
   twitter: "bamr87"
   website: "https://www.bash-365.com/about/"
+
+# AI-voiced persona on the BASH news desk — see _data/characters.yml. The bio
+# MUST carry the disclosure (brand.instructions.md, "Layered voices"). The
+# avatar is the brand mark until the portrait in characters.yml is generated.
+ines-calder:
+  name: "Ines Calder"
+  role: "Security desk, BASH news (AI-voiced persona)"
+  tagline: "Evidence, not adjectives"
+  bio: >-
+    Ines Calder is an AI-voiced persona on the BASH news desk, not a real
+    person or employee. Pieces under this byline are drafted with AI and
+    reviewed and approved by Amr Abdel-Motaleb before publishing.
+  location: "Denver, CO"
+  avatar: "https://www.bash-365.com/assets/brand/favicon.svg"
+  website: "https://www.bash-365.com/about/"

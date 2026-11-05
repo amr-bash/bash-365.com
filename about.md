@@ -19,7 +19,7 @@ tags:
   - about
 draft: published
 date: 2024-05-31T01:35:49.414Z
-lastmod: 2026-06-15T12:00:00.000Z
+lastmod: 2026-11-04T12:00:00.000Z
 permalink: /about/
 slug: about
 ---
@@ -30,7 +30,7 @@ slug: about
 
 ## Who we are
 
-BASH Consulting — Bourne Again Solutions — is a Denver-based IT consultancy. Small and medium-sized businesses (SMBs) compete against companies with far larger technology budgets and dedicated IT teams. The systems that give those larger companies an edge — cloud infrastructure, Enterprise Resource Planning (ERP), and modern accounting platforms — are now available to smaller businesses without a large up-front capital investment. Our job is to help you choose, build, and run them.
+BASH Consulting — Bourne Again Solutions Hero, a nod to the `bash` shell — is a Denver-based IT consultancy. Small and medium-sized businesses (SMBs) compete against companies with far larger technology budgets and dedicated IT teams. The systems that give those larger companies an edge — cloud infrastructure, Enterprise Resource Planning (ERP), and modern accounting platforms — are now within reach without a large up-front capital investment. Our job is to help you choose, build, and run them, and to leave your team able to own them.
 
 <div class="text-center my-4">
   <img src="/assets/images/office.jpg" class="img-fluid rounded-3 shadow-sm" alt="A small-business office workspace with laptops and paperwork" loading="lazy">
@@ -50,7 +50,7 @@ The pace of change in cloud computing, data, and business applications is real, 
 
 ## Our expertise
 
-Good decisions depend on good data, and good data depends on the right architecture. We provide cost-effective IT architecture tailored to each business.
+Good decisions need numbers that tie out. We design the architecture so they do, sized to the business rather than to a vendor template.
 
 Our experience spans the everyday back-office tools many businesses already rely on — **Microsoft Excel, Access, and Outlook** — through to enterprise-wide systems such as:
 
@@ -171,7 +171,7 @@ Beyond client work, BASH Consulting supports its community. We advocate for work
 
 ## Get in touch
 
-If you are a small or medium-sized business looking to adopt enterprise-grade technology, streamline operations, and compete more effectively, we would like to help. We start with a discovery conversation to understand your systems and goals before recommending anything.
+If your close depends on a workbook only one person understands, or your systems no longer agree with each other, start with a conversation. The first call is free, covers your systems and the one or two problems that matter most, and leaves you with a clearer picture whether or not you hire us.
 
 <a href="/contact/" class="btn btn-primary btn-lg px-4">Book a free consultation</a>
 

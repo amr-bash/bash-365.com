@@ -47,6 +47,8 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 | [B365-003](features/features.yml) | build-validate.yml builds both stacks and runs the content linter | shipped | [`.github/workflows/build-validate.yml`](.github/workflows/build-validate.yml) · [`README.md`](README.md) | FR1 |
 | [B365-004](features/features.yml) | Nightly site-health | shipped | [`api`](api) · [`README.md`](README.md) | TBD |
 | [B365-005](features/features.yml) | extension/ Prompt Orchestrator | shipped | [`extension`](extension) · [`README.md`](README.md) | TBD |
+| [B365-006](features/features.yml) | Layered brand voice: base, campaign overlays, AI-voiced news-desk characters | partial | [`_data/characters.yml`](_data/characters.yml) · [`docs/news-desk.md`](docs/news-desk.md) | FR3 |
+| [B365-007](features/features.yml) | In-character drafting for news-desk personas (stretch goal) | planned | [`.github/prompts/in-character-draft.prompt.md`](.github/prompts/in-character-draft.prompt.md) · [`docs/news-desk.md`](docs/news-desk.md) | FR4 |
 
 **Requirement → feature trace**
 
@@ -55,6 +57,8 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 | TBD | B365-001, B365-004, B365-005 |
 | NFR2 | B365-002 |
 | FR1 | B365-003 |
+| FR3 | B365-006 |
+| FR4 | B365-007 |
 <!-- features:end -->
 
 ## 5. Requirements
@@ -63,6 +67,8 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 
 - FR1: Both production stacks build on every push/PR
 - FR2: Repo docs (README, CLAUDE, AGENTS, CHANGELOG, PRD) are excluded from the built site
+- FR3: Content follows a layered voice (base, campaign overlay, news-desk character) selected in front matter; hard rules and the AI-persona disclosure cannot be overridden by any layer ([brand instructions](.github/instructions/brand.instructions.md), [news desk](docs/news-desk.md))
+- FR4 (stretch): News-desk characters can draft their own pieces in character, as disclosed AI personas, for human review; nothing publishes without a human merge ([news desk](docs/news-desk.md))
 
 **Non-functional**
 
@@ -78,6 +84,7 @@ Every user-facing capability has a stable id in the feature catalog [`features/f
 ## 7. Roadmap / open questions
 
 - Which stack is canonical for the apex long-term (see bash-365-apex): TBD
+- News desk, next: recurring character columns (e.g. the security desk's weekly threat roundup, the field desk's shop-floor notes) and a character roster page where readers can follow or subscribe to each persona. To be specced and built in a separate PR ([news desk](docs/news-desk.md)).
 
 ## 8. Links
 

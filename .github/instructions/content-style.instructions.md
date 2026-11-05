@@ -2,7 +2,7 @@
 applyTo: "pages/**/*.md,index.md,about.md,contact.md"
 description: "Editorial voice, audience profile, industry context, and style rules for all customer-facing content on bash-365.com"
 date: 2026-05-18T12:00:00.000Z
-lastmod: 2026-06-21T12:00:00.000Z
+lastmod: 2026-11-04T12:00:00.000Z
 ---
 
 # Content Style Guide
@@ -13,7 +13,7 @@ Shared editorial rules for all customer-facing content. Page-type-specific rules
 
 **Primary audience:** Owners, operators, and decision-makers at small and medium businesses (SMBs, 5–200 employees) in the **Denver metro area** evaluating outside IT help.
 
-**Secondary audience:** In-house IT generalists at those SMBs who need to justify a project upward.
+**Secondary audience:** In-house IT generalists at those SMBs who need to justify a project upward, and the finance and accounting people (controllers, staff accountants, the person who owns the close workbook) who already build the logic the business runs on. Write to them as builders, never as "non-technical" users.
 
 **Reader profile:**
 - Time-poor; reads on mobile between meetings.
@@ -53,17 +53,21 @@ Avoid: crypto, defense, gambling, adult — not our market.
 
 ## Voice and tone
 
+The full voice (tone, sentence shape, vocabulary, visitors versus clients, CTA wording, and before/after examples) lives in the **Verbal identity** section of [`brand.instructions.md`](./brand.instructions.md). The mechanics below are the minimum every page meets.
+
 - **Confident, not boastful.** "We've migrated dozens of QuickBooks shops to NetSuite" > "We're the leading experts in ERP migration."
 - **Plain English first, technical second.** First mention of an acronym is spelled out: "Enterprise Resource Planning (ERP)".
 - **Conversational but not chatty.** Contractions OK ("we'll", "you're"). Slang and exclamation marks are not.
 - **Active voice.** "We design the architecture" not "The architecture is designed by us."
 - **Lead with the business outcome**, follow with the technical mechanism, close with what the reader does next.
-- **One CTA per page**, usually `/contact/` or a scheduling link.
+- **One CTA per page**, worded **Book a free consultation** and linking to `/contact/`, in the closing section.
+- **Translate in place.** Pair the finance idea with the systems idea in the same sentence (a reconciliation is a test; an approval is a review) rather than explaining one side only.
 - **Enact, don't announce.** Never label a piece's own creative device ("satire", "parody", "a Broadway-style musical number", "reality show", "exposé"). Perform the bit and let the reader notice — naming the genre flattens it. The final review/polish pass should confirm no raw descriptors survive in reader-facing text (title, description, excerpt, sub-title, snippet, body).
 
 ## Words to use
 
 - "Outcome", "downtime", "month-end close", "audit-ready", "uptime", "cost-per-seat", "total cost of ownership (TCO)", "phased rollout", "vendor lock-in", "data residency", "compliance posture".
+- Bridge terms that carry both sides: "tie out", "audit trail", "maker-checker", "version history", "written down", "own and leave with".
 - Industry-specific terms when accurate: "GL" (general ledger), "AR/AP", "WIP", "EOM", "SLA", "MTTR", "RTO/RPO".
 
 ## Words to avoid (banned phrases)
@@ -75,6 +79,8 @@ Avoid: crypto, defense, gambling, adult — not our market.
 - "Empower" used vaguely (only OK when followed by *who* and *to do what*)
 - "Robust", "seamless", "scalable" without a number or example backing it up
 
+Also avoid (style, not lint-enforced): pitch verbs that promise without showing ("transform", "supercharge", "streamline" with no number), "navigate" as filler, condescension ("even you can"), and calling finance professionals "non-technical".
+
 ## Numbers, claims, and proof
 
 - Use ranges, not specifics, when you don't have audited data: "typically 4–8 weeks", not "exactly 6 weeks".
@@ -85,6 +91,7 @@ Avoid: crypto, defense, gambling, adult — not our market.
 ## Formatting
 
 - **One H1 per page**, rendered from `title:`. Body starts at H2.
+- **One paragraph per source line.** Do not hard-wrap prose in Markdown bodies.
 - **Heading style:** sentence case ("Cloud architecture and migration"), not title case.
 - **Lists:** prefer bulleted lists over long paragraphs for offerings, benefits, prerequisites.
 - **Tables:** use for comparisons (e.g., AWS vs Azure for a specific workload), not for prose.
