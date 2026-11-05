@@ -1,9 +1,10 @@
 ---
 type: article
-status: pending
+status: published
 source: pages/_posts/tech/2026-11-04-version-control-for-month-end-csv-exports.md
 title: Version control for month-end CSV exports
 url: https://www.bash-365.com/posts/2026/11/04/version-control-for-month-end-csv-exports/
+linkedin_urn: urn:li:share:7523984334798606336
 ---
 
 Re-run last month's trial balance a week after you signed it off. If someone posted to the closed period, can you see which accounts moved?
