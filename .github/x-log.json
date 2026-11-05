@@ -1,0 +1,25 @@
+{
+  "draft:c2078574-9d77-46f5-bc93-9f379de510c2": {
+    "author": "bamr87",
+    "posted_at": "2026-11-01T22:59:29Z",
+    "target": "x",
+    "type": "update",
+    "urn": "2117028782771241164"
+  },
+  "https://www.bash-365.com/posts/2026/09/10/how-to-roll-out-phishing-resistant-mfa/": {
+    "author": "bamr87",
+    "posted_at": "2026-11-01T22:58:50Z",
+    "source_file": "pages/_posts/tech/2026-09-10-how-to-roll-out-phishing-resistant-mfa.md",
+    "target": "x",
+    "type": "article",
+    "urn": "2117028619591762154"
+  },
+  "https://www.bash-365.com/posts/2026/10/15/hold-the-major-a-software-update-policy-you-can-sign-off-on/": {
+    "author": "bamr87",
+    "posted_at": "2026-11-01T22:56:09Z",
+    "source_file": "pages/_posts/corp/2026-10-15-hold-the-major-a-software-update-policy-you-can-sign-off-on.md",
+    "target": "x",
+    "type": "article",
+    "urn": "2117027944111685727"
+  }
+}

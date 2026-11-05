@@ -206,6 +206,40 @@ The LinkedIn app needs Community Management API access — for the page, `w_orga
 
 **Token lifecycle.** Access tokens last 60 days. With a refresh token and the app credentials, the lane refreshes once on a 401; otherwise renew with `connect` or the token generator when the token-health workflow warns. The `Linkedin-Version` header expires when LinkedIn's twelve-month support window closes — set `apiVersion` in `zer0.json` (the lane defaults to `202608`); `zer0 doctor` warns two months ahead.
 
+## Workflow: X publishing
+
+Posts to the BASH X account (**@bamr87**): **agents draft, a human approves, then it posts.** It handles link posts of blog posts — the commentary with the post's URL after it, whose card X draws from the page's own `twitter:card` tags — and standalone text posts. Its design of record is zer0-CMS [`docs/DISTRIBUTION.md` § X](https://github.com/bamr87/zer0-CMS/blob/main/docs/DISTRIBUTION.md#x).
+
+**zer0-CMS is where the account is connected and managed.** The platform is registered with X as an app of its own. An X channel for this site in the studio's **Distribution** area (account `bamr87`, site ledger file `.github/x-log.json`) is connected with **Connect with X**, signed in as @bamr87, through X's OAuth 2.0 consent screen. The platform renews the two-hour token by itself. Composing, approving, publishing and statistics all happen there, and none of it needs this repository's workflows.
+
+**The GitHub automation below is optional.** It is for posts drafted in git: a draft merged under `drafts/x/` is published from CI by zer0-CMS's X lane (`manage.py x`, the reusable `zer0-x.yml`), which signs with OAuth 1.0a keys kept as repo secrets, because a secret cannot follow an OAuth 2.0 token's renewals. It is off until those secrets exist. Both paths use the same ledger, keyed by canonical URL, so a page either one posted is never posted by the other. That ledger is X's own, so a post already shared on LinkedIn still goes to X once.
+
+Files:
+
+- `zer0.json` → `distribution.x` — the account (`bamr87`), the queue, the ledger, merge-as-approval, posts only.
+- `.github/workflows/x-publish.yml` — a caller of `zer0-x.yml`. On push to `main` under `drafts/x/**` (a merged draft) it publishes the queue live; `workflow_dispatch` rehearses the queue or one draft and publishes only when `live` is ticked. It commits the ledger and the draft's `published` status back with `[skip ci]`.
+- `.github/workflows/x-token-health.yml` — weekly; asks X which account the token posts as and fails the run when the keys are rejected or belong to anyone but `@bamr87`.
+- `.mcp.json` — the `zer0-x` MCP server (`scripts/x.sh mcp`): status, sources, queue, preview and draft for Claude Code. Its publish tool stays off unless the operator starts it with `ZER0_X_MCP_PUBLISH=1` and `ZER0_X_PUBLISH=1`.
+- `scripts/x.sh` — `scripts/linkedin.sh` with `ZER0_LANE=x`.
+- `_data/authors.yml` → `twitter: bamr87` on both bylines — the theme's author card links to the account. `_config.yml` deliberately sets no `twitter:` block: jekyll-seo-tag would then add `twitter:creator` tags, and it looks bylines up by `_data/authors.yml` key rather than name, so it would emit `@Amr Abdel-Motaleb`. X draws a post's card from the `twitter:card` and Open Graph tags every page already carries.
+
+The flow: `scripts/x.sh draft <section/date-slug>` writes `drafts/x/<date>-<slug>.md` at `status: pending` with the post's sub-title, excerpt or description and two hashtags; edit the body in the voice of `brand.instructions.md`, check `scripts/x.sh preview` (the whole post must fit 280 characters as X counts them — a link counts 23), open a PR, and **merge** it.
+
+### Activating X publishing in zer0-CMS
+
+1. In the X developer console (console.x.com → Apps → the app → Keys & Tokens → OAuth 2.0 Keys → **Set up**), choose "Read and write" and "Web App, Automated App or Bot", with the callback `https://<zer0-CMS>/api/v2/distribution/oauth/x/`. For zer0-CMS running on this machine that is `http://127.0.0.1:8000/api/v2/distribution/oauth/x/`: X wants `127.0.0.1`, not `localhost`, and matches the address exactly. X shows the **OAuth 2.0 Client ID and Client Secret** once, after the save; give them to zer0-CMS as `X_CLIENT_ID` and `X_CLIENT_SECRET`.
+2. Buy API credits: X's API is pay-per-use. A post carrying a link is billed well above one without (since 2026-04-20; the console shows current rates), and each publish also makes one billed read to check the account.
+3. In the studio, register this site (Sites → Register a site, its checkout under zer0-CMS's `SITES_DIR`), then add an X channel for it with account `bamr87` and site ledger file `.github/x-log.json`. Press **Connect with X** while signed in to X as @bamr87 and approve within ten minutes, then arm the channel. The deployment also needs `ZER0_X_PUBLISH=1`.
+
+While @bamr87 protects its posts (X → Settings → Privacy and safety), only its approved followers see what the channel publishes.
+
+### Activating the GitHub automation (optional)
+
+1. In the same X app, take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Generate the access token after the app's permission is "Read and write": a token made before the change keeps the permission it was made with. Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+2. zer0-CMS's `zer0-x.yml` must be on its `main` first, since both workflows call it there. Until all four secrets exist, both workflows skip with a notice — so a green token-health run has checked nothing until then.
+
+**Token lifecycle.** The studio's OAuth 2.0 token renews itself; if X refuses a renewal (the app was revoked), the channel says to connect again. The automation's OAuth 1.0a tokens do not expire. They stop working when @bamr87 revokes the app, when someone regenerates them in the console, or when the app's permission drops to read-only; the weekly check catches each.
+
 ## Workflow: Content review (weekly)
 
 File: `.github/workflows/content-review.yml` Schedule: `37 14 * * 4` UTC (Thursdays, morning in Denver), plus manual dispatch with optional `mode` (expand / new / auto) and `focus` inputs.
