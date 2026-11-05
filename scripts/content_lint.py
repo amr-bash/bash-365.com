@@ -371,6 +371,14 @@ def check_file(root: Path, path: Path) -> list:
                 rel, "warning", "PREVIEW_PATH",
                 f"post preview should live under /images/previews/, got: {preview}",
                 fm_line("preview")))
+        elif preview and not (root / "assets" / preview.lstrip("/")).is_file():
+            # Every post carries its own banner: on the page, and as its LinkedIn card (the
+            # distribution lane uploads it; without it the share goes out with the generic fallback).
+            findings.append(Finding(
+                rel, "error", "PREVIEW_MISSING",
+                f"preview image {preview} is not in assets{preview}: generate it before merging "
+                f"(scripts/generate-preview-images.sh --file {rel}, docs/preview-images.md)",
+                fm_line("preview")))
 
         layout = str(data.get("layout", ""))
         if layout and layout not in ("article", "news"):
@@ -502,6 +510,9 @@ def run_self_test() -> int:
     failures = []
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
+        banner = root / "assets/images/previews/a-quickbooks-migration-playbook-for-denver-distri.png"
+        banner.parent.mkdir(parents=True, exist_ok=True)
+        banner.write_bytes(b"\x89PNG")  # the good fixture's preview is on disk
         for rel, content, expected, forbidden in SELF_TEST_CASES:
             target = root / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -535,6 +546,11 @@ def run_self_test() -> int:
         good_errors = [f for f in check_file(root, good) if f.level == "error"]
         if good_errors:
             failures.append(f"good fixture raised errors: {[str(f) for f in good_errors]}")
+
+        # ... until its banner is not on disk: every post carries its own preview image
+        banner.unlink()
+        if not any(f.code == "PREVIEW_MISSING" for f in check_file(root, good) if f.level == "error"):
+            failures.append("good fixture without its banner: missing preview image not detected")
 
     if failures:
         print("content_lint --self-test: FAIL")

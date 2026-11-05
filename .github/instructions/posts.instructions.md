@@ -84,5 +84,6 @@ A typical post should follow this skeleton (skip sections that don't apply, don'
 - [ ] Subfolder matches topic table above
 - [ ] Universal checklist in `content-style.instructions.md` passes
 - [ ] Post links to at least one service page or `/contact/`
+- [ ] Its preview banner is generated and committed (`scripts/generate-preview-images.sh --file <post>`; content lint's `PREVIEW_MISSING` fails without it)
 - [ ] `lastmod` updated
 - [ ] Build passes locally
