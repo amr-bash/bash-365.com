@@ -1,0 +1,179 @@
+# The review loop for what is already out on the BASH LinkedIn page.
+#
+# Every Wednesday this takes the published LinkedIn post that has gone longest
+# without a review — zer0-CMS's lane orders them (`manage.py linkedin revisit`:
+# never reviewed first, then oldest) — and Claude reviews it with the article it
+# shares: checks the facts, dates, numbers and links against primary sources,
+# adds references where a claim stands on none, and corrects what is wrong or
+# out of date in the article. When the LinkedIn text itself is wrong, or would
+# serve readers better with the correction or a reference, it drafts a revision
+# (`manage.py linkedin revise`: new text for that post; LinkedIn lets a post's
+# text change, never its card). It records the review in the ledger
+# (`revisit --mark`) and opens ONE pull request — a person merges it, and
+# linkedin-publish.yml sends the revision. It never pushes to main, and a review
+# that finds nothing to change still opens a small PR that records it, so the
+# loop moves on to the next post.
+#
+# OFF by default on the schedule: kill switch LINKEDIN_REVISIT_ENABLED (a repo
+# VARIABLE the bot cannot set); a manual run works without it.
+#   gh variable set LINKEDIN_REVISIT_ENABLED --body true
+#
+# Auth as the other content routines (CLAUDE_CODE_OAUTH_TOKEN first, else
+# ANTHROPIC_API_KEY; neither: skip with a notice). Optional
+# LINKEDIN_REVISIT_GITHUB_TOKEN so the PR runs the normal checks. Design:
+# zer0-CMS docs/DISTRIBUTION.md § Keeping the site and LinkedIn in step.
+
+name: LinkedIn revisit (weekly review)
+
+on:
+  schedule:
+    - cron: '41 15 * * 3' # Wednesdays ~8–9 AM Denver
+  workflow_dispatch:
+    inputs:
+      key:
+        description: 'Review this ledger key (a page URL, or feature:YYYY-Www) instead of the next in line.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: linkedin-revisit
+  cancel-in-progress: false
+
+jobs:
+  revisit:
+    name: Review one published post and its article
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check the kill switch and an Anthropic credential
+        id: gate
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ENABLED: ${{ vars.LINKEDIN_REVISIT_ENABLED }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$ENABLED" = "true" ]; then
+            if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::No Anthropic credential set — skipping the LinkedIn review loop. Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY to activate it."
+            fi
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The LinkedIn review loop is off (repo variable LINKEDIN_REVISIT_ENABLED != true). Turn it on with: gh variable set LINKEDIN_REVISIT_ENABLED --body true. A manual run works without it."
+          fi
+
+      - name: Check out the site
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check out zer0-CMS (the LinkedIn lane)
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: bamr87/zer0-CMS
+          ref: main
+          path: .zer0-cms
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: .zer0-cms/content/requirements.txt
+
+      - name: Install the lane
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          pip install -r .zer0-cms/content/requirements.txt
+          echo "ZER0_CMS_DIR=$GITHUB_WORKSPACE/.zer0-cms" >> "$GITHUB_ENV"
+          echo "ZER0_CMS_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+
+      - name: Take the next post in line (deterministic)
+        id: pick
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          KEY: ${{ inputs.key }}
+        run: |
+          set -euo pipefail
+          scripts/linkedin.sh revisit --json > .revisit.json
+          python3 - "$KEY" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json, os, sys
+          rows = json.load(open(".revisit.json"))
+          wanted = sys.argv[1]
+          row = next((r for r in rows if r["key"] == wanted), None) if wanted else (rows[0] if rows else None)
+          if row is None:
+              print("Nothing to review: no published post" + (f" with key {wanted}" if wanted else ""))
+              sys.exit(0)
+          json.dump(row, open(".revisit-target.json", "w"), indent=2)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write("found=true\n")
+          print("### LinkedIn review\n")
+          for name in ("key", "urn", "source", "posted_at", "reviewed_at"):
+              print(f"- {name}: {row.get(name) or '—'}")
+          PY
+
+      - name: Review, correct, and open the pull request
+        if: steps.gate.outputs.ready == 'true' && steps.pick.outputs.found == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' && secrets.ANTHROPIC_API_KEY || '' }}
+          github_token: ${{ secrets.LINKEDIN_REVISIT_GITHUB_TOKEN || github.token }}
+          prompt: |
+            You review one post already published on the BASH Consulting LinkedIn page,
+            with the article it shares, so what is out there stays accurate, referenced
+            and current. `.revisit-target.json` names it: its ledger `key`, its post
+            `urn`, the article's `source` path (empty when the post links to another
+            site's page — then review the post's text against that page only).
+            Read `.claude/skills/linkedin-share/SKILL.md`,
+            `.github/instructions/content-style.instructions.md`,
+            `.github/instructions/posts.instructions.md` and the section's voice in
+            `_data/taxonomy.yml` first.
+
+            1. Read the article end to end, and the post's text: the published draft in
+               drafts/linkedin/ whose `linkedin_urn:` is the `urn` (its body is what went
+               out; a later `type: revision` draft with `revises:` that urn supersedes it).
+            2. Check every factual claim, number, date, version and named product, and
+               every external link (fetch it). A claim with no source gets a primary
+               one — vendor documentation, a standard, a regulator; never a blog — or
+               is softened to what can be supported. Fix what is wrong or out of date.
+               Keep the section's voice; do not rewrite what is right; do not pad.
+            3. If you changed the article: bump `lastmod` (`date -u +%Y-%m-%dT%H:%M:%S.000Z`),
+               and for a material correction add one closing line,
+               `*Updated <Month D, YYYY>: <what changed>.*`.
+            4. If the LinkedIn text states something now corrected, or a reference or
+               update would serve its readers, write its full new text (the skill's
+               rules; at most 3,000 characters; the payoff inside the first 140) to a
+               file and run `scripts/linkedin.sh revise <urn> --commentary-file <file>`,
+               then `scripts/linkedin.sh preview <the new draft id>` until it has no
+               ERROR. Its card — link, title, image — cannot change. Do not revise a
+               post only to restyle it.
+            5. Record the review: `scripts/linkedin.sh revisit --mark <key>`.
+            6. Run `python3 scripts/content_lint.py`.
+
+            Then open ONE pull request (never push to main):
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b linkedin/revisit-<short slug>-<date -u +%Y%m%d>
+            Commit the article (if changed), the revision draft (if any) and
+            `.github/linkedin-log.json` (the review record). Title it
+            `content(review): <article title> — <corrected | referenced | verified>`.
+            The body lists each finding with its source, what changed in the article,
+            the revision's text in full (if any), or "verified: nothing to change".
+            Merging is the approval; linkedin-publish.yml sends a revision in its run.
+
+            Finish with a one-paragraph summary and the PR URL.
+          claude_args: |
+            --max-turns 60
+            --allowedTools "Read,Write,Edit,Glob,Grep,WebFetch,Bash(scripts/linkedin.sh preview:*),Bash(scripts/linkedin.sh revise:*),Bash(scripts/linkedin.sh revisit:*),Bash(python3 scripts/content_lint.py:*),Bash(date:*),Bash(ls:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*)"

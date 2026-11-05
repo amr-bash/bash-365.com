@@ -6,6 +6,11 @@
 #
 #   * push to main under drafts/linkedin/** — a merged draft. The merge IS the
 #     approval (zer0.json accepts pending and approved), so this runs live.
+#     With the cadence in zer0.json, a merged draft waits for its slot.
+#   * schedule — the slot hours: Tuesday and Thursday 09:00 in Denver is 15:00
+#     UTC in summer and 16:00 in winter, so the run comes at :17 past 15, 16
+#     and 17 UTC; the lane releases at most one draft per open slot and only
+#     once its page has been on main for afterPage. Change this with the slots.
 #   * workflow_dispatch — rehearse the queue, or one draft, and publish it only
 #     when "live" is ticked.
 #
@@ -21,6 +26,8 @@ on:
   push:
     branches: [main]
     paths: ['drafts/linkedin/**']
+  schedule:
+    - cron: '17 15,16,17 * * 2,4' # the cadence's slots, Tue and Thu 09:00 America/Denver
   workflow_dispatch:
     inputs:
       draft:
@@ -47,7 +54,7 @@ jobs:
     with:
       command: publish
       draft: ${{ inputs.draft || '' }}
-      live: ${{ github.event_name == 'push' || inputs.live == true }}
+      live: ${{ github.event_name != 'workflow_dispatch' || inputs.live == true }}
     # By name, not `secrets: inherit`: GitHub passes inherited secrets only to a
     # reusable workflow in the same organization or enterprise, and this one
     # lives in the bamr87 account, so `inherit` passed nothing.

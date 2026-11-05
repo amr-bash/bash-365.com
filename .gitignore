@@ -49,3 +49,5 @@ _data/content_statistics.yml
 # planner's per-run working directory (plan.json / digest.md).
 .claude/loop/
 .loop/
+# zer0-CMS, checked out beside the site by the LinkedIn workflows
+.zer0-cms/

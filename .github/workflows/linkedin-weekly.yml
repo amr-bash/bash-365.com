@@ -1,0 +1,185 @@
+# The week's featured LinkedIn article, and the next page to catch up.
+#
+# Every Friday this drafts next week's posts for the BASH LinkedIn page:
+#   * the FEATURE — the section the ring in zer0.json gives the week (Muses,
+#     Corporate, ERP, Tech in turn), that section's featured post, pinned to
+#     Tuesday's slot (`manage.py linkedin weekly`);
+#   * one CATCH-UP share — the newest page that has never been on LinkedIn
+#     (`manage.py linkedin sync --draft --limit 1`), so the site and the page
+#     close the gap one post a week, in Thursday's slot.
+# zer0-CMS's lane makes those choices, deterministically. Claude then writes
+# each draft's commentary to the linkedin-share skill and opens ONE pull
+# request. A person edits and merges it — the merge is the approval — and
+# linkedin-publish.yml sends each draft in its slot. It never pushes to main.
+#
+# OFF by default on the schedule: the weekly run idles until the repo VARIABLE
+# LINKEDIN_WEEKLY_ENABLED is "true" — the kill switch. The bot token cannot set
+# variables, so the routine can never enable itself. A manual run
+# (workflow_dispatch) works without the variable — a human pressed the button.
+#   gh variable set LINKEDIN_WEEKLY_ENABLED --body true
+#
+# Auth, as the other content routines: CLAUDE_CODE_OAUTH_TOKEN preferred,
+# ANTHROPIC_API_KEY passed only when no OAuth token exists; with neither, the
+# run skips with a notice. Optional LINKEDIN_WEEKLY_GITHUB_TOKEN (a fine-grained
+# PAT, Contents + Pull requests) so the PR runs the normal checks. Design:
+# zer0-CMS docs/DISTRIBUTION.md § Keeping the site and LinkedIn in step.
+
+name: LinkedIn weekly feature
+
+on:
+  schedule:
+    - cron: '23 15 * * 5' # Fridays ~8–9 AM Denver: next week's feature, for review before Tuesday
+  workflow_dispatch:
+    inputs:
+      week:
+        description: 'ISO week to draft the feature for (YYYY-Www). Blank = the next feature slot.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: linkedin-weekly
+  cancel-in-progress: false
+
+jobs:
+  feature:
+    name: Draft the week's feature and the next catch-up share
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check the kill switch and an Anthropic credential
+        id: gate
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ENABLED: ${{ vars.LINKEDIN_WEEKLY_ENABLED }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$ENABLED" = "true" ]; then
+            if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "ready=false" >> "$GITHUB_OUTPUT"
+              echo "::notice::No Anthropic credential set — skipping the weekly LinkedIn feature. Add CLAUDE_CODE_OAUTH_TOKEN (preferred) or ANTHROPIC_API_KEY to activate it."
+            fi
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The weekly LinkedIn feature is off (repo variable LINKEDIN_WEEKLY_ENABLED != true). Turn it on with: gh variable set LINKEDIN_WEEKLY_ENABLED --body true. A manual run works without it."
+          fi
+
+      - name: Check out the site
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check out zer0-CMS (the LinkedIn lane)
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: bamr87/zer0-CMS
+          ref: main
+          path: .zer0-cms
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        if: steps.gate.outputs.ready == 'true'
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: .zer0-cms/content/requirements.txt
+
+      - name: Install the lane
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          pip install -r .zer0-cms/content/requirements.txt
+          # scripts/linkedin.sh finds zer0-CMS and its Python through these.
+          echo "ZER0_CMS_DIR=$GITHUB_WORKSPACE/.zer0-cms" >> "$GITHUB_ENV"
+          echo "ZER0_CMS_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
+
+      - name: Choose and scaffold the drafts (deterministic)
+        id: drafts
+        if: steps.gate.outputs.ready == 'true'
+        env:
+          WEEK: ${{ inputs.week }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "${WEEK:-}" ]; then args=(--week "$WEEK"); fi
+          scripts/linkedin.sh weekly "${args[@]}" --json | tee .feature.json
+          # Exit 1 while a page has no post: that is the backlog this closes, not a failure.
+          scripts/linkedin.sh sync --draft --limit 1 --json > .sync.json || true
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json
+          feature = json.load(open(".feature.json"))
+          sync = json.load(open(".sync.json"))
+          states = [p["state"] for p in sync["pages"]]
+          print("### LinkedIn weekly feature\n")
+          print(f"- Feature: {feature['message']}")
+          print(f"- Catch-up drafted: {', '.join(sync['drafted']) or 'none'}")
+          print(f"- Pages: {states.count('shared')} shared, {states.count('featured')} featured, "
+                f"{states.count('queued')} queued, {states.count('missing')} missing")
+          PY
+          echo "new=$(git status --porcelain -- drafts/linkedin | wc -l | tr -d ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Write the commentary and open the pull request
+        if: steps.gate.outputs.ready == 'true' && steps.drafts.outputs.new != '0'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_api_key: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN == '' && secrets.ANTHROPIC_API_KEY || '' }}
+          github_token: ${{ secrets.LINKEDIN_WEEKLY_GITHUB_TOKEN || github.token }}
+          prompt: |
+            You draft this week's posts for the BASH Consulting LinkedIn company page.
+            Read `.claude/skills/linkedin-share/SKILL.md` first (it names the brand,
+            content-style and taxonomy files to read too), then do this.
+
+            zer0-CMS's lane has already chosen and scaffolded the drafts: the new files
+            under drafts/linkedin/ (`git status --porcelain drafts/linkedin`), all at
+            `status: pending`. `.feature.json` says why it chose the feature.
+            - The FEATURE has `feature: YYYY-Www`, `section:` and `publish_at:` in its
+              front matter: the site's featured article of that week, posted in
+              Tuesday's slot.
+            - A CATCH-UP share, if one was drafted, is a page never shared before.
+
+            For each new draft:
+            1. Read the page it shares (`source:`) end to end, and its section's voice
+               in `_data/taxonomy.yml`.
+            2. Rewrite the body — the commentary that posts — to the skill. The
+               FEATURE is the week's longer read: 1,200–2,000 characters, the payoff
+               inside the first 140, three to five short paragraphs that carry the
+               piece's argument and one concrete takeaway, one soft call to read it,
+               2–3 CamelCase hashtags. A CATCH-UP share keeps the skill's usual
+               600–1,200. Never restate the card's description. Never invent a fact,
+               client, metric or certification. No banned phrases, no exclamation
+               marks.
+            3. Keep the front matter exactly as the lane wrote it.
+            4. The feature's page is the site's featured article this week: if its
+               front matter has no `featured: true`, add that one line and change
+               nothing else in the file.
+            5. Run `scripts/linkedin.sh preview <draft-id>` and fix every ERROR. If it
+               reports that a page has no card image of its own (requirePreview), do
+               not substitute another image: say so in the pull request body.
+            6. Run `python3 scripts/content_lint.py`.
+
+            Then open ONE pull request (never push to main):
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b linkedin/week-<the feature's week, lowercase>
+            Commit only the drafts and the `featured: true` line. Title it
+            `content(linkedin): <YYYY-Www> feature — <section> — <post title>`. The body
+            gives the week, the section and why this post (from `.feature.json`), each
+            draft's commentary in full with the fold line from preview, and the
+            approval checklist: edit the copy in the draft files, then merge — the
+            merge is the approval; linkedin-publish.yml posts the feature at its
+            publish_at and the catch-up share in the next free slot
+            (`scripts/linkedin.sh calendar` shows when).
+
+            Finish with a one-paragraph summary and the PR URL.
+          claude_args: |
+            --max-turns 50
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(scripts/linkedin.sh preview:*),Bash(scripts/linkedin.sh calendar:*),Bash(python3 scripts/content_lint.py:*),Bash(date:*),Bash(ls:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr list:*)"
