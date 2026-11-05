@@ -3,8 +3,14 @@
 # Smoke-builds the site with the same stack GitHub Pages uses (github-pages gem
 # + remote_theme), runs the content linter when present, and link-checks the
 # built output (internal links only). On any failure it writes an error
-# annotation and a step summary — Issues are disabled on this repository
-# (has_issues: false), so an issue-based alert can never land here.
+# annotation and a step summary. It does NOT file, update or close issues
+# (the job has contents: read only): the red run and its summary are the alert.
+# History: until 2026-09-07 an older version reused issue #26 for every
+# failure; the 379 internal-link failures behind it (theme /tags/ and
+# /archives/ links, agent-context repo-file links, href-less pagination
+# anchors) were fixed in 78f3c1e and the check has been green nightly since
+# 2026-09-08, but nothing closed #26 because this workflow no longer touches
+# issues.
 #
 # Needs no repository secrets: everything runs with the workflow's built-in
 # GITHUB_TOKEN. Steps that depend on optional tooling (e.g. the content linter)
@@ -92,7 +98,7 @@ jobs:
             --no-enforce-https \
             --ignore-urls "/(^#|^\/api\/|^\/tags\/?($|#)|^\/archives\/?($|#))/"
 
-      - name: Open or update site-health issue
+      - name: Report failure (annotation + step summary)
         if: failure()
         run: |
           set -euo pipefail
@@ -105,5 +111,5 @@ jobs:
             echo "Failed at ${stamp}."
             echo
             echo "Checks in this run: github-pages smoke build, content lint (if present), internal link check."
-            echo "See the failing step's log in this run. Issues are disabled on this repository, so no issue is filed."
+            echo "See the failing step's log in this run. This workflow files no issue; the red run is the alert."
           } >> "$GITHUB_STEP_SUMMARY"
