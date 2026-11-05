@@ -1,10 +1,11 @@
 ---
 type: article
-status: pending
+status: published
 link: https://bamr87.github.io/posts/2026/11/02/quest-log-it-journey/
 title: "IT-Journey: learn IT as quests you run in your own terminal"
 description: "A tour of Amr Abdel-Motaleb's free IT curriculum: 213 hands-on quests, a generated map, the AI agents that test it, and what a daily AI review found"
 image: assets/images/quest-log/quest-log-it-journey.png
+linkedin_urn: urn:li:share:7523983532172615680
 ---
 
 Our founder's open-source curriculum publishes its own failing grade: 0 of 27 tested slices perfect, after artificial intelligence (AI) agents took the course.
