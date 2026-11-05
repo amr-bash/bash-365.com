@@ -12,6 +12,10 @@ What keeps a stray file from publishing:
 - a page already in the ledger is not posted twice;
 - an error from the brand guard (a banned phrase, commentary over LinkedIn's limit) blocks the post.
 
+When it goes: the site has a cadence (`zer0.json` → `distribution.linkedin.cadence`, two posts a week, Tuesday and Thursday 09:00 in Denver), so a merged draft waits for its slot, and a share waits two hours after its page landed on `main`. Before a live send the lane asks the page (`checkLink`), so a share never points at a page that is not up. Every share carries the post's own banner (`requirePreview`; content lint's `PREVIEW_MISSING` keeps a post from merging without one). `scripts/linkedin.sh calendar` lists which draft goes when.
+
+Three more kinds of draft come from the routines: a week's **feature** (`feature: YYYY-Www`, from `linkedin-weekly.yml`, pinned with `publish_at:`), a **catch-up** share for a page never on LinkedIn (`scripts/linkedin.sh sync --draft`), and a **revision** (`type: revision`, `revises: <urn>`, from `linkedin-revisit.yml` or `scripts/linkedin.sh revise`), which changes the text of a post already out and goes on the next run. `scripts/linkedin.sh sync` shows which pages are on LinkedIn, and each page links to its posts (`_data/linkedin/posts.json`, in the footer).
+
 Preview the exact request, the guard's findings and every gate, with no network call:
 
 ```bash
