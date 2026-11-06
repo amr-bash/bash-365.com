@@ -149,7 +149,9 @@ Steps, all with the built-in `GITHUB_TOKEN` — no extra secrets needed:
 3. **Link check** — runs `htmlproofer` against the built `_site`, internal
 links only (`--disable-external`). Ignores `/api/` URLs (those only resolve on the SWA host), the theme-emitted `/tags/…`, `/archives/…`, and bare `#<tag>` anchor links (the site publishes no tag/archive index pages yet), and the published `CLAUDE`/`AGENTS` agent-context pages (their relative repo-file links are not site URLs).
 4. **On failure** — writes an error annotation and a step summary describing
-the failure. Issues are disabled on this repository, so no issue is filed; check the Actions tab (or the failure notification email) for red nightly runs.
+the failure. The job has `contents: read` only and files no issue; check the Actions tab (or the failure notification email) for red nightly runs.
+
+History: an earlier version reused issue #26 for every failure. It was red from 2026-07-08 to 2026-09-07 with 379 internal-link failures (theme `/tags/` and `/archives/` links, agent-context repo-file links, href-less pagination anchors). Commit `78f3c1e` fixed them on 2026-09-07 with the ignore pattern above and the `_config.yml` excludes, and the check has passed every night since 2026-09-08. #26 stayed open only because the reworked workflow no longer comments on or closes issues.
 
 ## Workflow: Content gardener (weekly)
 
