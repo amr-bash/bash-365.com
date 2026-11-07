@@ -8,7 +8,7 @@ lastmod: 2026-10-16T18:00:00.000Z
 draft: false
 categories: [tech]
 tags: [azure, devops, ci-cd, project-management, small-teams]
-preview: /images/previews/azure-devops-guide-for-small-teams.png
+preview: /images/previews/azure-devops-for-small-teams-a-practical-guide.png
 ---
 
 Most small teams outgrow shared drives and email threads long before they outgrow their budget. Work lives in spreadsheets, code lives in one person's laptop, and releases happen by hand on Friday afternoon. Azure DevOps gives you planning, source control, and automated builds in one place. The first five people are free.

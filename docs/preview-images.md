@@ -17,6 +17,10 @@ This is the operator's runbook — the facts, the commands, and the traps. The *
 | Credentials | `OPENAI_API_KEY`, loaded from `.env` at the repo root (never committed). For xAI: OAuth first (`XAI_OAUTH_TOKEN`, the Grok CLI store, Kilo's xAI login), `XAI_API_KEY` last |
 | Cost | Roughly $0.15–0.20 per image at current pricing — cheap for one post, real money for a `--force` run across the whole site |
 
+## Every post has one
+
+`scripts/content_lint.py` fails a post whose `preview:` file is not in `assets/images/previews/` (`PREVIEW_MISSING`), so a post never merges without its banner. The banner is also the post's LinkedIn card: the distribution lane uploads it, and without it the share goes out with the site's generic `fallbackImage`. Generate it in the pull request that adds the post, once its title is final.
+
 ## Filename rule
 
 The image filename is derived from the post's `title:`, not its file path:

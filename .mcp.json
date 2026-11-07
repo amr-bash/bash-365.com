@@ -5,6 +5,12 @@
       "command": "bash",
       "args": ["scripts/linkedin.sh", "mcp"],
       "env": {}
+    },
+    "zer0-x": {
+      "type": "stdio",
+      "command": "bash",
+      "args": ["scripts/x.sh", "mcp"],
+      "env": {}
     }
   }
 }

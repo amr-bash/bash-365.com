@@ -1,0 +1,16 @@
+{%- comment -%}
+  The page's posts on the BASH LinkedIn page, under the page: the site and the
+  company page point at each other. The data is zer0-CMS's siteMap
+  (_data/linkedin/posts.json, keyed by the page's URL path), which the LinkedIn
+  lane refreshes on every publish and commits back with its ledger. Shadows the
+  theme's empty custom/footer.html stub; a page with no post renders nothing.
+{%- endcomment -%}
+{%- assign linkedin = site.data.linkedin.posts[page.url] -%}
+{%- if linkedin and linkedin.posts.size > 0 -%}
+<p class="small text-center my-2" data-linkedin-posts>
+  <span class="text-body-secondary">Discuss it on LinkedIn:</span>
+  {% for post in linkedin.posts -%}
+  <a href="{{ post.url }}" rel="noopener" target="_blank">{% if post.feature %}the week's featured article{% else %}the BASH post{% endif %}</a>{% unless forloop.last %} · {% endunless %}
+  {%- endfor %}
+</p>
+{%- endif -%}

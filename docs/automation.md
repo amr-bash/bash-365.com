@@ -26,12 +26,9 @@ What it does, in order:
 1. Answers `OPTIONS` preflight; rejects anything that isn't `POST`.
 2. Rejects requests whose `Origin` header isn't on the allowlist
 (production domains, this SWA's own hostnames including per-PR staging hostnames, plus anything in the `ALLOWED_ORIGINS` setting).
-3. Returns `503` when neither `CLAUDE_CODE_OAUTH_TOKEN` nor
-   `ANTHROPIC_API_KEY` is configured, so an accidentally enabled widget fails cleanly.
-4. Applies a fixed-window in-memory rate limit per client IP
-   (default 20 requests per minute per function instance).
-5. Caps the request body size (default 512 KB) and validates the JSON shape
-   (`messages` must be a non-empty array).
+3. Returns `503` when neither `CLAUDE_CODE_OAUTH_TOKEN` nor `ANTHROPIC_API_KEY` is configured, so an accidentally enabled widget fails cleanly.
+4. Applies a fixed-window in-memory rate limit per client IP (default 20 requests per minute per function instance).
+5. Caps the request body size (default 512 KB) and validates the JSON shape (`messages` must be a non-empty array).
 6. Forwards `{model, max_tokens, system, messages, tools, stream: true}` to
 the Anthropic Messages API with the server-held credential, capping `max_tokens` (default cap 4096) and pinning the model server-side (`CHAT_MODEL`, else the default) — the client's `model` field is ignored so a tampered request can't select a costlier model.
 7. Streams the Server-Sent Events response back unchanged. The widget also
@@ -41,8 +38,7 @@ accepts a buffered or plain-JSON response, so `CHAT_BUFFER_RESPONSE=true` is ava
 
 1. `CLAUDE_CODE_OAUTH_TOKEN` — a long-lived Claude Code OAuth token from
 `claude setup-token` (Claude Pro/Max). Used by default when set. Sent as `Authorization: Bearer <token>` with the `anthropic-beta: oauth-2025-04-20` header. Because subscription OAuth must identify as Claude Code, the proxy forces the first `system` block to the Claude Code identity and keeps the site assistant's own prompt as the following block.
-2. `ANTHROPIC_API_KEY` — a standard workspace `x-api-key`. The fallback, used
-   only when no OAuth token is set.
+2. `ANTHROPIC_API_KEY` — a standard workspace `x-api-key`. The fallback, used only when no OAuth token is set.
 
 Set exactly one (OAuth wins if both are present). The rotating-refresh OAuth mode from the theme's Cloudflare worker is not ported — it needs a key/value store SWA functions don't provide, so use the long-lived setup-token instead.
 
@@ -149,12 +145,13 @@ Steps, all with the built-in `GITHUB_TOKEN` — no extra secrets needed:
 
 1. **Smoke build** — builds the site with the github-pages gem and
 `remote_theme`, the same stack production GitHub Pages uses. A CI-only Gemfile is generated in the run because the repo's `Gemfile` carries a local-path theme gem meant for Docker development.
-2. **Content lint** — runs `scripts/content_lint.py --warn-only` when the
-   script exists; otherwise prints a notice and moves on.
+2. **Content lint** — runs `scripts/content_lint.py --warn-only` when the script exists; otherwise prints a notice and moves on.
 3. **Link check** — runs `htmlproofer` against the built `_site`, internal
 links only (`--disable-external`). Ignores `/api/` URLs (those only resolve on the SWA host), the theme-emitted `/tags/…`, `/archives/…`, and bare `#<tag>` anchor links (the site publishes no tag/archive index pages yet), and the published `CLAUDE`/`AGENTS` agent-context pages (their relative repo-file links are not site URLs).
 4. **On failure** — writes an error annotation and a step summary describing
-the failure. Issues are disabled on this repository, so no issue is filed; check the Actions tab (or the failure notification email) for red nightly runs.
+the failure. The job has `contents: read` only and files no issue; check the Actions tab (or the failure notification email) for red nightly runs.
+
+History: an earlier version reused issue #26 for every failure. It was red from 2026-07-08 to 2026-09-07 with 379 internal-link failures (theme `/tags/` and `/archives/` links, agent-context repo-file links, href-less pagination anchors). Commit `78f3c1e` fixed them on 2026-09-07 with the ignore pattern above and the `_config.yml` excludes, and the check has passed every night since 2026-09-08. #26 stayed open only because the reworked workflow no longer comments on or closes issues.
 
 ## Workflow: Content gardener (weekly)
 
@@ -166,8 +163,7 @@ Uses `anthropics/claude-code-action@v1` to draft **one** new blog post per week 
 `.github/instructions/posts.instructions.md`, and `.github/prompts/article-write.prompt.md` first;
 - pick an uncovered topic from `_data/taxonomy.yml` (falling back to the
 service catalog in `_data/entity/services.yml`) and the existing post list under `pages/_posts/`;
-- write a single file into `drafts/` with `draft: true` and standards-compliant
-  frontmatter;
+- write a single file into `drafts/` with `draft: true` and standards-compliant frontmatter;
 - open a PR titled `content(posts): weekly draft — <topic>` whose body
 includes the reviewer's promotion checklist (move to `pages/_posts/<subfolder>/`, flip `draft:` to `false`, confirm or regenerate the preview image).
 
@@ -189,7 +185,7 @@ Publishes to the BASH LinkedIn **company page** (`urn:li:organization:64517157`)
 
 Files:
 
-- `.github/workflows/linkedin-publish.yml` — a caller of zer0-CMS's `zer0-linkedin.yml`. On push to `main` under `drafts/linkedin/**` (a merged draft) it publishes the queue live; `workflow_dispatch` rehearses the queue or one draft and publishes only when `live` is ticked. It commits the ledger and the draft's `published` status back with `[skip ci]`. There is no free-text or post-by-reference input: every share is a draft a person merged.
+- `.github/workflows/linkedin-publish.yml` — a caller of zer0-CMS's `zer0-linkedin.yml`. On push to `main` under `drafts/linkedin/**` (a merged draft), and at the cadence's slot hours (Tuesday and Thursday, `17 15,16,17 * * 2,4` UTC, which covers 09:00 Denver in summer and in winter), it publishes the queue live under the site's cadence: at most one draft per open slot, a share no sooner than two hours after its page landed, every share with the post's own banner (`requirePreview`) and only once its page answers (`checkLink`); a revision goes on the first run; `workflow_dispatch` rehearses the queue or one draft and publishes only when `live` is ticked. It commits the ledger and the draft's `published` status back with `[skip ci]`. There is no free-text or post-by-reference input: every share is a draft a person merged.
 - `.github/workflows/linkedin-token-health.yml` — weekly; the same workflow's `status` command introspects the token (when the app credentials are secrets) or proves it with a cheap read, and fails the run when the token is rejected or within 7 days of expiry (Issues are disabled on this repository, so the failed run and its summary are the alert).
 - `.mcp.json` — the `zer0-linkedin` MCP server (`scripts/linkedin.sh mcp`): status, sources, queue, preview and draft for Claude Code. Its publish tool stays off unless the operator starts it with `ZER0_LINKEDIN_MCP_PUBLISH=1` and `ZER0_LINKEDIN_PUBLISH=1`.
 - `.github/linkedin-log.json` — the ledger, including the 2026-07-30 QuickBooks share.
@@ -205,6 +201,58 @@ The LinkedIn app needs Community Management API access — for the page, `w_orga
 **When the settings break.** A `zer0.json` the lane cannot parse does not fail a publish: the lane falls back to its defaults (queue `.zer0/drafts/linkedin`, `approved` only) and a merged draft gets "Nothing to publish" on a green run. Only `status` exits non-zero on it. So `zer0-doctor.yml` gates every pull request that touches `zer0.json` and fails on its `zer0-json-invalid` error; run `scripts/linkedin.sh status` after any edit to the file.
 
 **Token lifecycle.** Access tokens last 60 days. With a refresh token and the app credentials, the lane refreshes once on a 401; otherwise renew with `connect` or the token generator when the token-health workflow warns. The `Linkedin-Version` header expires when LinkedIn's twelve-month support window closes — set `apiVersion` in `zer0.json` (the lane defaults to `202608`); `zer0 doctor` warns two months ahead.
+
+## Workflow: LinkedIn weekly feature
+
+File: `.github/workflows/linkedin-weekly.yml` Schedule: `23 15 * * 5` UTC (Fridays, morning in Denver), plus manual dispatch with an optional `week` (YYYY-Www).
+
+One featured article a week on the BASH LinkedIn page, the sections in turn: Muses, then Corporate, ERP and Tech (`zer0.json` → `distribution.linkedin.weekly`, from the week of 2026-11-09). zer0-CMS's lane chooses deterministically (`scripts/linkedin.sh weekly`). It takes the post in the week's section marked `featured: true` that has not been featured, else the newest not featured, and pins the draft to Tuesday's slot. In the same run it drafts one **catch-up** share for the newest page that has never been on LinkedIn (`scripts/linkedin.sh sync --draft --limit 1`), so the site and the page close the gap a post a week; on 2026-11-05, 27 of 30 posts had none. Claude writes both drafts' commentary to the `linkedin-share` skill (the feature is the week's longer read; LinkedIn's API cannot publish its long-form Articles, so the feature is an article post), adds `featured: true` to the feature's page if it lacks it, previews them, and opens ONE pull request. Merging is the approval; `linkedin-publish.yml` posts each in its slot.
+
+Kill switch: the repository variable `LINKEDIN_WEEKLY_ENABLED` (`gh variable set LINKEDIN_WEEKLY_ENABLED --body true`); a manual run bypasses it. Credentials as the other routines (`CLAUDE_CODE_OAUTH_TOKEN` first, else `ANTHROPIC_API_KEY`); optional `LINKEDIN_WEEKLY_GITHUB_TOKEN` so the PR runs the normal checks. It needs zer0-CMS with the `weekly` command on its `main` (bamr87/zer0-CMS#90).
+
+## Workflow: LinkedIn revisit (weekly review)
+
+File: `.github/workflows/linkedin-revisit.yml` Schedule: `41 15 * * 3` UTC (Wednesdays), plus manual dispatch with an optional ledger `key`.
+
+The continuous-improvement loop for what is already out on the BASH page. Each run takes the published post that has gone longest without a review (`scripts/linkedin.sh revisit`: never reviewed first, then oldest). Claude reviews it with the article it shares: every claim, number, date and link is checked against primary sources, references are added where a claim stands on none, and what is wrong or out of date is corrected, with a dated *Updated* line for a material correction. When the post's own text needs the correction or a reference, Claude drafts a **revision** (`scripts/linkedin.sh revise`): LinkedIn lets a post's text change, never its card. It records the review in the ledger (`revisit --mark`) and opens ONE pull request; a review that finds nothing still opens a small one, so the loop moves on. Merging sends the revision on the next publish run.
+
+Kill switch: `LINKEDIN_REVISIT_ENABLED`; credentials as above; optional `LINKEDIN_REVISIT_GITHUB_TOKEN`. Needs zer0-CMS#90 on `main` (the `revise` and `revisit` commands and the `posts_update` call).
+
+**The site links back.** Each post shows its LinkedIn posts ("Discuss it on LinkedIn") from `_data/linkedin/posts.json`, zer0-CMS's `siteMap`, which the publish workflow refreshes and commits with the ledger (`_includes/custom/footer.html`). `scripts/linkedin.sh sync` reports which pages are shared, featured, queued or missing.
+
+## Workflow: X publishing
+
+Posts to the BASH X account (**@bamr87**): **agents draft, a human approves, then it posts.** It handles link posts of blog posts — the commentary with the post's URL after it, whose card X draws from the page's own `twitter:card` tags — and standalone text posts. Its design of record is zer0-CMS [`docs/DISTRIBUTION.md` § X](https://github.com/bamr87/zer0-CMS/blob/main/docs/DISTRIBUTION.md#x).
+
+**zer0-CMS is where the account is connected and managed.** The platform is registered with X as an app of its own. An X channel for this site in the studio's **Distribution** area (account `bamr87`, site ledger file `.github/x-log.json`) is connected with **Connect with X**, signed in as @bamr87, through X's OAuth 2.0 consent screen. The platform renews the two-hour token by itself. Composing, approving, publishing and statistics all happen there, and none of it needs this repository's workflows.
+
+**The GitHub automation below is optional.** It is for posts drafted in git: a draft merged under `drafts/x/` is published from CI by zer0-CMS's X lane (`manage.py x`, the reusable `zer0-x.yml`), which signs with OAuth 1.0a keys kept as repo secrets, because a secret cannot follow an OAuth 2.0 token's renewals. It is off until those secrets exist. Both paths use the same ledger, keyed by canonical URL, so a page either one posted is never posted by the other. That ledger is X's own, so a post already shared on LinkedIn still goes to X once.
+
+Files:
+
+- `zer0.json` → `distribution.x` — the account (`bamr87`), the queue, the ledger, merge-as-approval, posts only.
+- `.github/workflows/x-publish.yml` — a caller of `zer0-x.yml`. On push to `main` under `drafts/x/**` (a merged draft) it publishes the queue live; `workflow_dispatch` rehearses the queue or one draft and publishes only when `live` is ticked. It commits the ledger and the draft's `published` status back with `[skip ci]`.
+- `.github/workflows/x-token-health.yml` — weekly; asks X which account the token posts as and fails the run when the keys are rejected or belong to anyone but `@bamr87`.
+- `.mcp.json` — the `zer0-x` MCP server (`scripts/x.sh mcp`): status, sources, queue, preview and draft for Claude Code. Its publish tool stays off unless the operator starts it with `ZER0_X_MCP_PUBLISH=1` and `ZER0_X_PUBLISH=1`.
+- `scripts/x.sh` — `scripts/linkedin.sh` with `ZER0_LANE=x`.
+- `_data/authors.yml` → `twitter: bamr87` on both bylines — the theme's author card links to the account. `_config.yml` deliberately sets no `twitter:` block: jekyll-seo-tag would then add `twitter:creator` tags, and it looks bylines up by `_data/authors.yml` key rather than name, so it would emit `@Amr Abdel-Motaleb`. X draws a post's card from the `twitter:card` and Open Graph tags every page already carries.
+
+The flow: `scripts/x.sh draft <section/date-slug>` writes `drafts/x/<date>-<slug>.md` at `status: pending` with the post's sub-title, excerpt or description and two hashtags; edit the body in the voice of `brand.instructions.md`, check `scripts/x.sh preview` (the whole post must fit 280 characters as X counts them — a link counts 23), open a PR, and **merge** it.
+
+### Activating X publishing in zer0-CMS
+
+1. In the X developer console (console.x.com → Apps → the app → Keys & Tokens → OAuth 2.0 Keys → **Set up**), choose "Read and write" and "Web App, Automated App or Bot", with the callback `https://<zer0-CMS>/api/v2/distribution/oauth/x/`. For zer0-CMS running on this machine that is `http://127.0.0.1:8000/api/v2/distribution/oauth/x/`: X wants `127.0.0.1`, not `localhost`, and matches the address exactly. X shows the **OAuth 2.0 Client ID and Client Secret** once, after the save; give them to zer0-CMS as `X_CLIENT_ID` and `X_CLIENT_SECRET`.
+2. Buy API credits: X's API is pay-per-use. A post carrying a link is billed well above one without (since 2026-04-20; the console shows current rates), and each publish also makes one billed read to check the account.
+3. In the studio, register this site (Sites → Register a site, its checkout under zer0-CMS's `SITES_DIR`), then add an X channel for it with account `bamr87` and site ledger file `.github/x-log.json`. Press **Connect with X** while signed in to X as @bamr87 and approve within ten minutes, then arm the channel. The deployment also needs `ZER0_X_PUBLISH=1`.
+
+While @bamr87 protects its posts (X → Settings → Privacy and safety), only its approved followers see what the channel publishes.
+
+### Activating the GitHub automation (optional)
+
+1. In the same X app, take its **API Key and Secret** and @bamr87's **Access Token and Secret** (the app owner's own account is on the app's "Keys and tokens" page; for any other account, `scripts/x.sh connect --print-token` signed in as it). Generate the access token after the app's permission is "Read and write": a token made before the change keeps the permission it was made with. Add the four repo **secrets**: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`.
+2. zer0-CMS's `zer0-x.yml` must be on its `main` first, since both workflows call it there. Until all four secrets exist, both workflows skip with a notice — so a green token-health run has checked nothing until then.
+
+**Token lifecycle.** The studio's OAuth 2.0 token renews itself; if X refuses a renewal (the app was revoked), the channel says to connect again. The automation's OAuth 1.0a tokens do not expire. They stop working when @bamr87 revokes the app, when someone regenerates them in the console, or when the app's permission drops to read-only; the weekly check catches each.
 
 ## Workflow: Content review (weekly)
 
@@ -238,17 +286,13 @@ The reflexive "practice what we preach" enforcer. It runs the deterministic gate
 
 ## Cost and safety notes
 
-- Both Anthropic credentials should be workspace-scoped keys with spend caps
-  set in the Anthropic console.
+- Both Anthropic credentials should be workspace-scoped keys with spend caps set in the Anthropic console.
 - Every scheduled AI lane is OFF until a human sets its repository variable —
 `CONTENT_LOOP_ENABLED`, `CONTENT_GARDENER_ENABLED`, `CONTENT_REVIEW_ENABLED`, `PREACHER_ENABLED` — and is stopped the same way, without editing a workflow (`gh variable set <NAME> --body false`). Manual `workflow_dispatch` runs bypass the variable. `fleet.manifest.yml` at the repo root inventories the lanes, their switches, and the tokens they use.
-- The agents' shared guardrails — untrusted-input quarantine, the honesty rule,
-  merge discipline — live in `.claude/skills/_shared/quarantine.md`.
-- The chat function enforces model, token, origin, body-size, and rate
-  limits server-side; a modified client can't raise them.
+- The agents' shared guardrails — untrusted-input quarantine, the honesty rule, merge discipline — live in `.claude/skills/_shared/quarantine.md`.
+- The chat function enforces model, token, origin, body-size, and rate limits server-side; a modified client can't raise them.
 - The issue function holds the only GitHub credential the site uses, scoped to
 issues on one repo. The origin check stops other websites, not scripts (a script can forge `Origin`), so the per-IP limit and the `from-chat` label are what keep spam manageable. If spam arrives, remove the token and the chat falls back to email.
 - The gardener writes only to `drafts/` on a new branch, and the preacher only
 opens PRs — neither ever pushes to `main`; a human merges or closes every PR. The site-health workflow has read-only repo access.
-- Scheduled workflows run only from the default branch, so changes to them
-  take effect after merge to `main`.
+- Scheduled workflows run only from the default branch, so changes to them take effect after merge to `main`.

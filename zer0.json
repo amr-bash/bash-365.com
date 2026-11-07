@@ -169,7 +169,50 @@
       "acceptStatuses": ["pending", "approved"],
       "sources": ["posts"],
       // jekyll-seo-tag's site-wide og_image, for a post whose preview is missing.
-      "fallbackImage": "assets/images/office.jpg"
+      "fallbackImage": "assets/images/office.jpg",
+      // Every share carries the post's own banner, never the fallback: content
+      // lint's PREVIEW_MISSING keeps a post from merging without one.
+      "requirePreview": true,
+      // When approved drafts go (zer0-CMS docs/DISTRIBUTION.md § The cadence):
+      // two posts a week, Tuesday and Thursday mornings in Denver, a share no
+      // sooner than two hours after its page landed on main. A merged draft
+      // waits for its slot; linkedin-publish.yml runs at those hours (its cron
+      // follows these slots — change both together).
+      "cadence": {
+        "timezone": "America/Denver",
+        "slots": ["tue 09:00", "thu 09:00"],
+        "minGap": "36h",
+        "perDay": 1,
+        "afterPage": "2h"
+      },
+      // The week's featured article (§ Keeping the site and LinkedIn in step):
+      // the sections in turn, one a week, from the week of 2026-11-09 (Muses),
+      // on Tuesday's slot. linkedin-weekly.yml drafts it each Friday.
+      "weekly": {
+        "ring": ["muses", "corp", "erp", "tech"],
+        "anchor": "2026-11-09",
+        "at": "tue 09:00"
+      },
+      // Each page's LinkedIn posts, for the "On LinkedIn" line under a post
+      // (_includes/custom/footer.html); refreshed on every publish.
+      "siteMap": "_data/linkedin/posts.json"
+    },
+    // X distribution through zer0-CMS's X lane (its docs/DISTRIBUTION.md § X):
+    // scripts/x.sh (its `manage.py x`), .github/workflows/x-publish.yml and the
+    // fleet CMS read this block. Settings only — the four X_* keys are Actions
+    // secrets, and nothing in this file can arm a live publish.
+    "x": {
+      // The handle the lane posts as. X posts as whoever the token is, so every
+      // publish first checks the token is this account's and refuses otherwise.
+      "account": "bamr87",
+      "siteUrl": "https://www.bash-365.com",
+      // X's own queue and ledger: the ledger is keyed by canonical URL, and a
+      // post already shared on LinkedIn has still to go to X.
+      "queue": "drafts/x",
+      "ledger": ".github/x-log.json",
+      // As LinkedIn: merging a draft to main is the approval.
+      "acceptStatuses": ["pending", "approved"],
+      "sources": ["posts"]
     }
   },
 

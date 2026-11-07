@@ -19,14 +19,14 @@ tags:
   - Small Business
 draft: published
 date: 2024-05-31T01:35:49.414Z
-lastmod: 2026-06-15T12:00:00.000Z
+lastmod: 2026-11-04T12:00:00.000Z
 permalink: /contact/
 slug: contact
 ---
 
 ## Get in touch
 
-If you are a small or medium-sized business looking to adopt enterprise-grade technology, streamline operations, and compete more effectively, BASH Consulting can help. We start with a free discovery conversation to understand your systems and goals before recommending anything — no jargon, no obligation.
+If month-end runs on a workbook only one person understands, your systems no longer agree with the general ledger, or you are weighing a move to the cloud or an Enterprise Resource Planning (ERP) system, start here. The first call is free. We talk through your systems and the one or two problems that matter most, and you leave with a clearer picture whether or not you hire us.
 
 **Note:** BASH Consulting LLC currently operates as an independent contractor serving small and medium-sized businesses that need support and expertise in information technology and business management systems. We plan to grow the practice, build our team, and expand our services over time.
 

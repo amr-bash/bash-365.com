@@ -56,6 +56,14 @@ Everything in `content-editorial` still applies (no banned phrases, acronyms exp
    Fix every `ERROR`; `preview` exits non-zero while one remains. On a clean pending draft the gates left are `status_not_accepted` (here, the merge: CI on `main` publishes a merged pending draft), `publish_disabled` and `no_credential`. None of the three is yours to lift.
 5. **Hand off for approval.** The draft sits at `status: pending` in a pull request. A human edits and **merges** it; `linkedin-publish.yml` posts it and sets it to `published`. Do not post from this skill, and never set `ZER0_LINKEDIN_PUBLISH`.
 
+## The week's featured article
+
+Each week one post is the BASH page's featured article: the section the ring in `zer0.json` → `distribution.linkedin.weekly` gives the week (Muses, Corporate, ERP, Tech in turn), and that section's featured post. `scripts/linkedin.sh weekly` chooses it and scaffolds a draft with `feature: YYYY-Www`, `section:` and `publish_at:` (Tuesday's slot); `.github/workflows/linkedin-weekly.yml` runs it each Friday. LinkedIn's API cannot publish its long-form Articles, so the feature is an article post whose commentary carries the week's longer read: 1,200–2,000 characters, the payoff inside the first 140, three to five short paragraphs with the piece's argument and one concrete takeaway, one soft call to read it, 2–3 hashtags. Keep the lane's front matter as written. The feature's page should carry `featured: true`, which makes it the site's featured article too.
+
+## Revisions
+
+A post already out can have its **text** changed: a correction, a reference, an update. Its card — link, title, image — cannot change. `scripts/linkedin.sh revise <urn> --commentary-file <file>` writes a pending `type: revision` draft with the post's full new text; a person merges it, and the next publish run sends it at once (a revision takes no cadence slot). Revise only to make the post accurate or more useful, never to restyle it. `.github/workflows/linkedin-revisit.yml` reviews one published post and its article a week, oldest review first (`scripts/linkedin.sh revisit`), and records each review with `revisit --mark`.
+
 ## Guardrails
 
 - A draft never becomes a live post without a human merge; `status` is the record.
