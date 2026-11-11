@@ -5,7 +5,7 @@ excerpt: "The QuickBooks-to-ERP decision isn't a software preference — it's a 
 author: "Amr Abdel-Motaleb"
 layout: article
 date: 2026-07-08T12:00:00.000Z
-lastmod: 2026-09-07T12:00:00.000Z
+lastmod: 2026-11-11T22:16:55.000Z
 draft: false
 categories: [corp]
 tags: [erp-implementation, quickbooks, total-cost-of-ownership, multi-entity, month-end-close, vendor-lock-in]
@@ -28,7 +28,7 @@ These are the patterns that separate a real ceiling from a setup you configured 
 - **Two or more company files stitched together.** The moment your books live in more than one QuickBooks file and someone merges them by hand, you are running a manual consolidation engine made of a person and a spreadsheet. That person is a single point of failure, and the spreadsheet is unauditable.
 - **Transaction volume the file can't carry.** List limits, file bloat, and multi-minute report runs are the software telling you it was built for a smaller company than you now are. When users start avoiding reports because they're slow, the data has stopped serving the business.
 - **Close-time creep.** Track how long month-end close takes, in days, over the last year. If it's climbing — five days became eight, eight became twelve — you're watching complexity outrun the tool. The close is the clearest vital sign finance has.
-- **Multi-entity and consolidation pain.** More than two legal entities and a need to see the consolidated picture on a schedule is the signal QuickBooks handles worst. It does not consolidate entities natively, so every reporting cycle you pay for it in manual labor. Vendor documentation is candid about where native consolidation and multi-book accounting live — see Oracle's [NetSuite documentation](https://docs.oracle.com/en/cloud/saas/netsuite/index.html) and Microsoft's [Dynamics 365 Business Central documentation](https://learn.microsoft.com/en-us/dynamics365/business-central/) for what that machinery looks like when it's built in rather than bolted on.
+- **Multi-entity and consolidation pain.** More than two legal entities and a need to see the consolidated picture on a schedule is the signal QuickBooks handles worst. Separate QuickBooks company files do not consolidate on their own, so every reporting cycle you pay for it in manual labor; Intuit sells multi-entity management as a separate product, [Intuit Enterprise Suite](https://quickbooks.intuit.com/online/advanced/), worth pricing before you assume a different vendor is required. Vendor documentation is candid about where native consolidation and multi-book accounting live — see Oracle's [NetSuite documentation](https://docs.oracle.com/en/cloud/saas/netsuite/index.html) and Microsoft's [Dynamics 365 Business Central documentation](https://learn.microsoft.com/en-us/dynamics365/business-central/) for what that machinery looks like when it's built in rather than bolted on.
 - **Inventory or cost-accounting you've outgrown.** If true costs live in a spreadsheet because QuickBooks can't track landed cost, work-in-process, or standard-versus-actual, your margins are a monthly estimate. For a light manufacturer or a Front Range distributor, that estimate is the number the whole business steers by.
 
 ## What the status quo actually costs
@@ -76,3 +76,5 @@ There is no single right answer, and any advisor who leads with one before seein
 ## Next step
 
 If two or three of those signals are true and your cost-of-inaction number has crossed your migration number, the move is worth doing once and doing well. A scoped assessment — your one-page inventory, what you actually need, and whether to fix the model or replace it — is the cheapest way to avoid a six-figure mistake. See [[ERP consulting]] to start there.
+
+*Updated November 11, 2026: clarified that Intuit offers multi-entity consolidation as a separate product.*
